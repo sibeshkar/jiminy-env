@@ -13,6 +13,12 @@ import (
 
 var addr = flag.String("addr", "localhost:8080", "http service address")
 
+type Message struct {
+	Name string
+	Body string
+	Time int64
+}
+
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
@@ -50,8 +56,10 @@ func main() {
 		select {
 		case <-done:
 			return
-		case t := <-ticker.C:
-			err := c.WriteMessage(websocket.TextMessage, []byte(t.String()))
+		case <-ticker.C:
+			m := Message{"Alice", "Hello", 1294706395881547000}
+			err := c.WriteJSON(&m)
+			//err := c.WriteMessage(websocket.TextMessage, []byte(t.String()))
 			if err != nil {
 				log.Println("write:", err)
 				return
