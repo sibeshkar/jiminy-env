@@ -22,16 +22,14 @@ class MyClientProtocol(WebSocketClientProtocol):
             'Time': 56748475,
             }
             self.sendMessage(ujson.dumps(payload).encode('utf-8'), False)
-            self.factory.reactor.callLater(1, hello)
+            self.factory.reactor.callLater(0.01, hello)
 
         # start sending messages every second ..
         hello()
 
     def onMessage(self, payload, isBinary):
-        if isBinary:
-            print("Binary message received: {0} bytes".format(len(payload)))
-        else:
-            print("Text message received: {0}".format(payload.decode('utf8')))
+        payload = ujson.loads(payload)
+        print("Text message received: {0}".format(payload['Name']))
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {0}".format(reason))

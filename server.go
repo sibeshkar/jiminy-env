@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -36,8 +37,10 @@ func echo(w http.ResponseWriter, r *http.Request) {
 		//fmt.Printf("%s sent: %s\n", conn.RemoteAddr(), string(msg))
 		fmt.Printf("%s sent: %s\n", conn.RemoteAddr(), m.Body)
 		// Write message back to browser
-		// if err = conn.WriteMessage(msgType, msg); err != nil {
-		// 	return
-		// }
+		err2 := conn.WriteJSON(m)
+		if err2 != nil {
+			log.Println("write:", err2)
+			return
+		}
 	}
 }
