@@ -14,22 +14,23 @@ class MyClientProtocol(WebSocketClientProtocol):
 
     def onOpen(self):
         print("WebSocket connection open.")
-
-        def hello():
-            payload = {
-            'Name': 'ThisIsName',
-            'Body': 'ThisisBody',
-            'Time': 56748475,
-            }
-            self.sendMessage(ujson.dumps(payload).encode('utf-8'), False)
-            self.factory.reactor.callLater(0.01, hello)
-
-        # start sending messages every second ..
-        hello()
+        self.send()
 
     def onMessage(self, payload, isBinary):
         payload = ujson.loads(payload)
         print("Text message received: {0}".format(payload['Name']))
+
+    def _send(self):
+        payload = {
+            'method' : 'v0.env.reset',
+            'body' : {
+                'env_id' : 'wob.mini.TicTacToe'
+            }
+        }
+        self.sendMessage(ujson.dumps(payload).encode('utf-8'), False)
+    
+    def send(self):
+        self.factory.reactor.callFromThread(self._send)
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {0}".format(reason))
