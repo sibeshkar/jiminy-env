@@ -5,43 +5,65 @@ import (
 	"golang.org/x/net/context"
 )
 
-// GRPCClient is an implementation of KV that talks over RPC.
-type GRPCClient struct{ client proto.KVClient }
+// GRPCClient is an implementation of Env that talks over RPC.
+type GRPCClient struct{ client proto.EnvClient }
 
-func (m *GRPCClient) Put(key string, value []byte) error {
-	_, err := m.client.Put(context.Background(), &proto.PutRequest{
-		Key:   key,
-		Value: value,
-	})
-	return err
-}
-
-func (m *GRPCClient) Get(key string) ([]byte, error) {
-	resp, err := m.client.Get(context.Background(), &proto.GetRequest{
-		Key: key,
+func (m *GRPCClient) Launch(key string) (string, error) {
+	resp, err := m.client.Launch(context.Background(), &proto.Request{
+		EnvId: key,
 	})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return resp.Value, nil
+	return resp.Status, nil
+}
+
+func (m *GRPCClient) Reset(key string) (string, error) {
+	resp, err := m.client.Reset(context.Background(), &proto.Request{
+		EnvId: key,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return resp.Status, nil
+}
+
+func (m *GRPCClient) Close(key string) (string, error) {
+	resp, err := m.client.Close(context.Background(), &proto.Request{
+		EnvId: key,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return resp.Status, nil
 }
 
 // Here is the gRPC server that GRPCClient talks to.
 type GRPCServer struct {
 	// This is the real implementation
-	Impl KV
+	Impl Env
 }
 
-func (m *GRPCServer) Put(
+func (m *GRPCServer) Launch(
 	ctx context.Context,
-	req *proto.PutRequest) (*proto.Empty, error) {
-	return &proto.Empty{}, m.Impl.Put(req.Key, req.Value)
+	req *proto.Request) (*proto.Response, error) {
+	v, err := m.Impl.Launch(req.EnvId)
+	return &proto.Response{Status: v}, err
 }
 
-func (m *GRPCServer) Get(
+func (m *GRPCServer) Reset(
 	ctx context.Context,
-	req *proto.GetRequest) (*proto.GetResponse, error) {
-	v, err := m.Impl.Get(req.Key)
-	return &proto.GetResponse{Value: v}, err
+	req *proto.Request) (*proto.Response, error) {
+	v, err := m.Impl.Reset(req.EnvId)
+	return &proto.Response{Status: v}, err
+}
+
+func (m *GRPCServer) Close(
+	ctx context.Context,
+	req *proto.Request) (*proto.Response, error) {
+	v, err := m.Impl.Close(req.EnvId)
+	return &proto.Response{Status: v}, err
 }
