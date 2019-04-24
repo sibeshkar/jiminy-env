@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/hashicorp/go-plugin"
 	"github.com/sibeshkar/jiminy-env/shared"
@@ -18,15 +19,24 @@ var upgrader = websocket.Upgrader{}
 
 var env shared.Env
 
+var agent_conn AgentConn
+
+type AgentConn struct {
+	ws  *websocket.Conn
+	fps int64
+}
+
 type Headers struct {
-	Sent_at           string `json:"sent_at"`
+	Sent_at           int64  `json:"sent_at"`
 	Message_id        string `json:"message_id"`
 	Parent_message_id string `json:"parent_message_id"`
 	Episode_id        string `json:"episode_id"`
 }
 
 type Body struct {
-	Env_id string `json:"env_id"`
+	Env_id string  `json:"env_id"`
+	Reward float32 `json:"reward"`
+	Done   bool    `json:"done"`
 }
 
 type Message struct {
@@ -76,12 +86,23 @@ func startRPC() shared.Env {
 func handler(w http.ResponseWriter, r *http.Request) {
 	conn, _ := upgrader.Upgrade(w, r, nil) // error ignored for sake of simplicity
 
+	fmt.Println("Connected:")
+	agent_conn := AgentConn{
+		ws:  conn,
+		fps: 600,
+	}
+
+	go agent_conn.OnMessage()
+	go agent_conn.Environment()
+}
+
+func (c *AgentConn) OnMessage() error {
 	for {
 		//_, msg, err := conn.ReadMessage()
 		m := Message{}
-		err := conn.ReadJSON(&m)
+		err := c.ws.ReadJSON(&m)
 		if err != nil {
-			return
+			return err
 		}
 		if m.Method == "v0.env.launch" {
 			Launch(&m)
@@ -92,6 +113,48 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 
 	}
+
+}
+
+func (c *AgentConn) Environment() error {
+	for {
+		c.SendReward(GetReward())
+		time.Sleep(time.Duration(1/c.fps) * time.Second)
+	}
+
+}
+
+func (c *AgentConn) SendReward(m *Message) error {
+	err := c.ws.WriteJSON(&m)
+	if err != nil {
+		log.Println("write:", err)
+	}
+	return err
+}
+
+//Random function to generate get reward from environment
+func GetReward() *Message {
+	//env.GetReward()string
+	reward, _ := env.GetReward()
+
+	method := "v0.env.reward"
+
+	headers := Headers{
+		Sent_at: time.Now().Unix(),
+	}
+
+	body := Body{
+		Env_id: "wob.mini.TicTacToe",
+		Reward: reward,
+	}
+
+	m := Message{
+		Method:  method,
+		Headers: headers,
+		Body:    body,
+	}
+
+	return &m
 }
 
 func Launch(m *Message) {

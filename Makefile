@@ -25,7 +25,6 @@ clean:
 	rm -f $(CONTROLLER_BINARY_NAME)
 run:
 	export ENV_PLUGIN="./$(PLUGIN_BINARY_NAME)"
-	$(GOBUILD) -o $(CONTROLLER_BINARY_NAME) -v
 	./$(CONTROLLER_BINARY_NAME)
 
 # Cross compilation

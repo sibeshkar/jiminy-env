@@ -41,6 +41,15 @@ func (m *GRPCClient) Close(key string) (string, error) {
 	return resp.Status, nil
 }
 
+func (m *GRPCClient) GetReward() (float32, error) {
+	resp, err := m.client.GetReward(context.Background(), &proto.Empty{})
+	if err != nil {
+		return 0, err
+	}
+
+	return resp.Reward, nil
+}
+
 // Here is the gRPC server that GRPCClient talks to.
 type GRPCServer struct {
 	// This is the real implementation
@@ -66,4 +75,11 @@ func (m *GRPCServer) Close(
 	req *proto.Request) (*proto.Response, error) {
 	v, err := m.Impl.Close(req.EnvId)
 	return &proto.Response{Status: v}, err
+}
+
+func (m *GRPCServer) GetReward(
+	ctx context.Context,
+	req *proto.Empty) (*proto.Reward, error) {
+	v, err := m.Impl.GetReward()
+	return &proto.Reward{Reward: v}, err
 }

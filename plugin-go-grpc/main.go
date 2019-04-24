@@ -1,6 +1,9 @@
 package main
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/hashicorp/go-plugin"
 	"github.com/sibeshkar/jiminy-env/shared"
 )
@@ -25,6 +28,13 @@ func (Env) Close(key string) (string, error) {
 	var err error
 	err = nil
 	return "env is closed:" + key, err
+}
+
+func (Env) GetReward() (float32, error) {
+	var err error
+	rand.Seed(time.Now().UnixNano())
+	reward := rand.Float32()
+	return reward, err
 }
 
 func main() {

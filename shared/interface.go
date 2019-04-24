@@ -28,6 +28,7 @@ type Env interface {
 	Launch(key string) (string, error)
 	Reset(key string) (string, error)
 	Close(key string) (string, error)
+	GetReward() (float32, error)
 }
 
 // This is the implementation of plugin.GRPCPlugin so we can serve/consume this.

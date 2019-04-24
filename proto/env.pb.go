@@ -102,25 +102,100 @@ func (m *Response) GetStatus() string {
 	return ""
 }
 
+type Reward struct {
+	Reward               float32  `protobuf:"fixed32,1,opt,name=reward,proto3" json:"reward,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Reward) Reset()         { *m = Reward{} }
+func (m *Reward) String() string { return proto.CompactTextString(m) }
+func (*Reward) ProtoMessage()    {}
+func (*Reward) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bbfacb289c786e17, []int{2}
+}
+
+func (m *Reward) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Reward.Unmarshal(m, b)
+}
+func (m *Reward) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Reward.Marshal(b, m, deterministic)
+}
+func (m *Reward) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Reward.Merge(m, src)
+}
+func (m *Reward) XXX_Size() int {
+	return xxx_messageInfo_Reward.Size(m)
+}
+func (m *Reward) XXX_DiscardUnknown() {
+	xxx_messageInfo_Reward.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Reward proto.InternalMessageInfo
+
+func (m *Reward) GetReward() float32 {
+	if m != nil {
+		return m.Reward
+	}
+	return 0
+}
+
+type Empty struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Empty) Reset()         { *m = Empty{} }
+func (m *Empty) String() string { return proto.CompactTextString(m) }
+func (*Empty) ProtoMessage()    {}
+func (*Empty) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bbfacb289c786e17, []int{3}
+}
+
+func (m *Empty) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Empty.Unmarshal(m, b)
+}
+func (m *Empty) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Empty.Marshal(b, m, deterministic)
+}
+func (m *Empty) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Empty.Merge(m, src)
+}
+func (m *Empty) XXX_Size() int {
+	return xxx_messageInfo_Empty.Size(m)
+}
+func (m *Empty) XXX_DiscardUnknown() {
+	xxx_messageInfo_Empty.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Empty proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*Request)(nil), "proto.Request")
 	proto.RegisterType((*Response)(nil), "proto.Response")
+	proto.RegisterType((*Reward)(nil), "proto.Reward")
+	proto.RegisterType((*Empty)(nil), "proto.Empty")
 }
 
 func init() { proto.RegisterFile("env.proto", fileDescriptor_bbfacb289c786e17) }
 
 var fileDescriptor_bbfacb289c786e17 = []byte{
-	// 152 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x4c, 0xcd, 0x2b, 0xd3,
-	0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x05, 0x53, 0x4a, 0x0a, 0x5c, 0xec, 0x41, 0xa9, 0x85,
-	0xa5, 0xa9, 0xc5, 0x25, 0x42, 0xa2, 0x5c, 0x6c, 0xa9, 0x79, 0x65, 0xf1, 0x99, 0x29, 0x12, 0x8c,
-	0x0a, 0x8c, 0x1a, 0x9c, 0x41, 0xac, 0xa9, 0x79, 0x65, 0x9e, 0x29, 0x4a, 0x4a, 0x5c, 0x1c, 0x41,
-	0xa9, 0xc5, 0x05, 0xf9, 0x79, 0xc5, 0xa9, 0x42, 0x62, 0x5c, 0x6c, 0xc5, 0x25, 0x89, 0x25, 0xa5,
-	0xc5, 0x50, 0x25, 0x50, 0x9e, 0x51, 0x0b, 0x23, 0x17, 0xb3, 0x6b, 0x5e, 0x99, 0x90, 0x26, 0x17,
-	0x9b, 0x4f, 0x62, 0x69, 0x5e, 0x72, 0x86, 0x10, 0x1f, 0xc4, 0x1a, 0x3d, 0xa8, 0xe1, 0x52, 0xfc,
-	0x70, 0x3e, 0xd4, 0x28, 0x0d, 0x2e, 0xd6, 0xa0, 0xd4, 0xe2, 0xd4, 0x12, 0xa2, 0x54, 0x3a, 0xe7,
-	0xe4, 0x17, 0xa7, 0x12, 0x54, 0x99, 0xc4, 0x06, 0xe6, 0x1b, 0x03, 0x02, 0x00, 0x00, 0xff, 0xff,
-	0xc0, 0x7b, 0x07, 0xfa, 0xe7, 0x00, 0x00, 0x00,
+	// 197 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x8e, 0x41, 0x8a, 0xc2, 0x30,
+	0x14, 0x86, 0xe9, 0x0c, 0x49, 0xa7, 0x8f, 0x51, 0x21, 0xa0, 0x48, 0x57, 0x25, 0xab, 0xba, 0xe9,
+	0x42, 0x8f, 0x20, 0x45, 0x04, 0x57, 0xb9, 0x80, 0x54, 0xfb, 0x40, 0x41, 0x93, 0xda, 0xa4, 0x11,
+	0x2f, 0xe5, 0x19, 0xa5, 0xf1, 0xd1, 0x75, 0x57, 0xc9, 0xc7, 0xff, 0xc1, 0xfb, 0x20, 0x41, 0xed,
+	0x8b, 0xa6, 0x35, 0xce, 0x08, 0x16, 0x1e, 0x99, 0x41, 0xac, 0xf0, 0xd1, 0xa1, 0x75, 0x62, 0x0e,
+	0x1c, 0xb5, 0x3f, 0x5e, 0xeb, 0x65, 0x94, 0x45, 0x79, 0xa2, 0x18, 0x6a, 0xbf, 0xaf, 0xa5, 0x84,
+	0x3f, 0x85, 0xb6, 0x31, 0xda, 0xa2, 0x58, 0x00, 0xb7, 0xae, 0x72, 0x9d, 0x25, 0x85, 0x48, 0x66,
+	0xc0, 0x15, 0x3e, 0xab, 0xb6, 0xee, 0x8d, 0x36, 0xfc, 0x82, 0xf1, 0xa3, 0x88, 0x64, 0x0c, 0xac,
+	0xbc, 0x37, 0xee, 0xb5, 0x7e, 0x47, 0xf0, 0x5b, 0x6a, 0x2f, 0x56, 0xc0, 0x0f, 0x55, 0xa7, 0xcf,
+	0x17, 0x31, 0xfd, 0x16, 0x15, 0xd4, 0x91, 0xce, 0x06, 0xa6, 0xab, 0x39, 0x30, 0x85, 0x16, 0xdd,
+	0x28, 0x73, 0x7b, 0x33, 0x16, 0xc7, 0x98, 0xc9, 0x0e, 0x1d, 0x45, 0xff, 0xd3, 0x1a, 0x0a, 0xd3,
+	0xc9, 0xe0, 0xf6, 0xe3, 0x89, 0x07, 0xda, 0x7c, 0x02, 0x00, 0x00, 0xff, 0xff, 0x35, 0x84, 0x73,
+	0x0e, 0x3c, 0x01, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -138,6 +213,7 @@ type EnvClient interface {
 	Launch(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
 	Reset(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
 	Close(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
+	GetReward(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Reward, error)
 }
 
 type envClient struct {
@@ -175,11 +251,21 @@ func (c *envClient) Close(ctx context.Context, in *Request, opts ...grpc.CallOpt
 	return out, nil
 }
 
+func (c *envClient) GetReward(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Reward, error) {
+	out := new(Reward)
+	err := c.cc.Invoke(ctx, "/proto.Env/GetReward", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // EnvServer is the server API for Env service.
 type EnvServer interface {
 	Launch(context.Context, *Request) (*Response, error)
 	Reset(context.Context, *Request) (*Response, error)
 	Close(context.Context, *Request) (*Response, error)
+	GetReward(context.Context, *Empty) (*Reward, error)
 }
 
 // UnimplementedEnvServer can be embedded to have forward compatible implementations.
@@ -194,6 +280,9 @@ func (*UnimplementedEnvServer) Reset(ctx context.Context, req *Request) (*Respon
 }
 func (*UnimplementedEnvServer) Close(ctx context.Context, req *Request) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Close not implemented")
+}
+func (*UnimplementedEnvServer) GetReward(ctx context.Context, req *Empty) (*Reward, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetReward not implemented")
 }
 
 func RegisterEnvServer(s *grpc.Server, srv EnvServer) {
@@ -254,6 +343,24 @@ func _Env_Close_Handler(srv interface{}, ctx context.Context, dec func(interface
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Env_GetReward_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EnvServer).GetReward(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Env/GetReward",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EnvServer).GetReward(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Env_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.Env",
 	HandlerType: (*EnvServer)(nil),
@@ -269,6 +376,10 @@ var _Env_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Close",
 			Handler:    _Env_Close_Handler,
+		},
+		{
+			MethodName: "GetReward",
+			Handler:    _Env_GetReward_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
