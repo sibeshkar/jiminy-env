@@ -1,0 +1,2 @@
+ujson==1.35
+autobahn==19.2.1
