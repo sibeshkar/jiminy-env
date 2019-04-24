@@ -38,7 +38,7 @@ type Message struct {
 func main() {
 	env = startRPC()
 	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":15900", nil)
 }
 
 func startRPC() shared.Env {

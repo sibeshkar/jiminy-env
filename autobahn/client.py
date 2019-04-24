@@ -22,12 +22,13 @@ class MyClientProtocol(WebSocketClientProtocol):
 
     def _send(self):
         payload = {
-            'method' : 'v0.env.reset',
+            'method' : 'v0.env.launch',
             'body' : {
                 'env_id' : 'wob.mini.TicTacToe'
             }
         }
         self.sendMessage(ujson.dumps(payload).encode('utf-8'), False)
+        self.send()
     
     def send(self):
         self.factory.reactor.callFromThread(self._send)
@@ -45,8 +46,8 @@ if __name__ == '__main__':
 
     log.startLogging(sys.stdout)
 
-    factory = WebSocketClientFactory(u"ws://127.0.0.1:8080")
+    factory = WebSocketClientFactory(u"ws://127.0.0.1:15900")
     factory.protocol = MyClientProtocol
 
-    reactor.connectTCP("127.0.0.1", 8080, factory)
+    reactor.connectTCP("127.0.0.1", 15900, factory)
     reactor.run()
