@@ -9,15 +9,15 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/hashicorp/go-plugin"
+	plugin "github.com/hashicorp/go-plugin"
 	"github.com/sibeshkar/jiminy-env/shared"
 
 	"github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{}
-
 var env shared.Env
+var envStatus EnvStatus
 
 var agent_conn AgentConn
 
@@ -27,10 +27,10 @@ type AgentConn struct {
 }
 
 type Headers struct {
-	Sent_at           int64  `json:"sent_at"`
-	Message_id        string `json:"message_id"`
-	Parent_message_id string `json:"parent_message_id"`
-	Episode_id        string `json:"episode_id"`
+	Sent_at         int64  `json:"sent_at"`
+	MessageId       string `json:"message_id"`
+	ParentMessageId string `json:"parent_message_id"`
+	EpisodeId       string `json:"episode_id"`
 }
 
 type Body struct {

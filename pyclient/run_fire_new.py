@@ -169,6 +169,7 @@ class EnvController(threading.Thread):
         except Exception as e:
             self.error_buffer.record(e)
 
+
         # and loop
         try:
             while True:
