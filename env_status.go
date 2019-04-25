@@ -8,72 +8,49 @@ import (
 	"sync"
 )
 
-type EnvStatus struct {
+type EnvState struct {
 	//access lock for envID
-	envLock sync.Mutex
-	EnvId   string
+	EnvId string
 
 	//access lock for status
-	statusLock sync.Mutex
-	EnvStatus  string
+	sync.Mutex
+	EnvStatus string
 
-	episodeLock sync.Mutex
-	EpisodeId   int32
+	EpisodeId int32
 
-	fpsLock sync.Mutex
-	Fps     float32
+	Fps float32
 }
 
-// var envstatus EnvStatus
+//Creates new EnvState struct type to store, environment ID, env status,
+//episode ID and global FPS.
+func NewEnvState(EnvId string, EnvStatus string, EpisodeId int32, Fps float32) (*EnvState, error) {
+	var err error //replace with proper function for errors later
+	envStatus := EnvState{
+		EnvId:     EnvId,
+		EnvStatus: EnvStatus,
+		EpisodeId: EpisodeId,
+		Fps:       Fps,
+	}
 
-// func main() {
-// 	envstatus = EnvStatus{
-// 		EnvId:     "wob.mini.TicTacToe",
-// 		EnvStatus: "running",
-// 		EpisodeId: 45,
-// 		Fps:       60,
-// 	}
-// 	//i := 0
-// 	for {
-// 		go envstatus.EnvStatus_Update()
-// 		go envstatus.EnvStatus_Update2()
-// 		envstatus.EpisodeId_Update()
-// 		time.Sleep((1 / 4) * time.Second)
-// 		//fmt.Println(i)
-// 		//i++
-// 	}
+	return &envStatus, err
+}
 
-// }
-
-func (e EnvStatus) EnvStatus_Update() {
+func (e EnvState) EnvStatus_Update() {
 	var status string
 	if rand.Intn(30)%2 == 0 {
 		status = "running"
 	} else {
 		status = "resetting"
 	}
-	e.statusLock.Lock()
+	e.Lock()
 	e.EnvStatus = status
-	e.statusLock.Unlock()
+	e.Unlock()
 	fmt.Println("The status now due to EnvStatus_Update is:", e.EnvStatus)
 }
 
-func (e EnvStatus) EnvStatus_Update2() {
-	var status string
-	if rand.Intn(30)%3 == 0 {
-		status = "running2"
-	} else {
-		status = "resetting2"
-	}
-	e.statusLock.Lock()
-	e.EnvStatus = status
-	e.statusLock.Unlock()
-	fmt.Println("The status now due to EnvStatus_Update2 is:", e.EnvStatus)
-}
-
-func (e EnvStatus) EpisodeId_Update() {
-	e.episodeLock.Lock()
+func (e EnvState) EpisodeId_Update() {
+	e.Lock()
 	e.EpisodeId++
-	e.episodeLock.Unlock()
+	e.Unlock()
 	fmt.Println("Updated episode ID is:", e.EpisodeId)
 }

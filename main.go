@@ -1,13 +1,13 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
-	"time"
 
 	plugin "github.com/hashicorp/go-plugin"
 	"github.com/sibeshkar/jiminy-env/shared"
@@ -16,14 +16,14 @@ import (
 )
 
 var upgrader = websocket.Upgrader{}
+var addr = flag.String("addr", "localhost:15900", "http service address")
 var env shared.Env
-var envStatus EnvStatus
 
 var agent_conn AgentConn
 
 type AgentConn struct {
-	ws  *websocket.Conn
-	fps int64
+	ws       *websocket.Conn
+	envState *EnvState
 }
 
 type Headers struct {
@@ -34,7 +34,7 @@ type Headers struct {
 }
 
 type Body struct {
-	Env_id string  `json:"env_id"`
+	EnvId  string  `json:"env_id"`
 	Reward float32 `json:"reward"`
 	Done   bool    `json:"done"`
 }
@@ -46,12 +46,12 @@ type Message struct {
 }
 
 func main() {
-	env = startRPC()
+	env = pluginRPC()
 	http.HandleFunc("/", handler)
-	http.ListenAndServe(":15900", nil)
+	log.Fatal(http.ListenAndServe(*addr, nil))
 }
 
-func startRPC() shared.Env {
+func pluginRPC() shared.Env {
 	log.SetOutput(ioutil.Discard)
 
 	// We're a host. Start by launching the plugin process.
@@ -84,16 +84,37 @@ func startRPC() shared.Env {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	conn, _ := upgrader.Upgrade(w, r, nil) // error ignored for sake of simplicity
 
-	fmt.Println("Connected:")
-	agent_conn := AgentConn{
-		ws:  conn,
-		fps: 600,
+	agent_conn, err := NewAgentConn(w, r)
+	if err != nil {
+		log.Println(err)
 	}
+	fmt.Println("Connected to ", agent_conn.ws.RemoteAddr())
 
 	go agent_conn.OnMessage()
-	go agent_conn.Environment()
+	go agent_conn.RewardController()
+	//go agent_conn.EnvController()
+}
+
+func NewAgentConn(w http.ResponseWriter, r *http.Request) (AgentConn, error) {
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	envState, err := NewEnvState("wob.mini.TicTacToe", "resetting", 1, 60)
+	agent_conn := AgentConn{
+		ws:       conn,
+		envState: envState,
+	}
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	return agent_conn, err
 }
 
 func (c *AgentConn) OnMessage() error {
@@ -116,70 +137,29 @@ func (c *AgentConn) OnMessage() error {
 
 }
 
-func (c *AgentConn) Environment() error {
-	for {
-		c.SendReward(GetReward())
-		time.Sleep(time.Duration(1/c.fps) * time.Second)
-	}
-
-}
-
-func (c *AgentConn) SendReward(m *Message) error {
-	err := c.ws.WriteJSON(&m)
-	if err != nil {
-		log.Println("write:", err)
-	}
-	return err
-}
-
-//Random function to generate get reward from environment
-func GetReward() *Message {
-	//env.GetReward()string
-	reward, _ := env.GetReward()
-
-	method := "v0.env.reward"
-
-	headers := Headers{
-		Sent_at: time.Now().Unix(),
-	}
-
-	body := Body{
-		Env_id: "wob.mini.TicTacToe",
-		Reward: reward,
-	}
-
-	m := Message{
-		Method:  method,
-		Headers: headers,
-		Body:    body,
-	}
-
-	return &m
-}
-
 func Launch(m *Message) {
-	fmt.Printf("launch message received: %s\n", m.Body.Env_id)
-	result, err := env.Launch(m.Body.Env_id)
+	fmt.Printf("launch message received: %s\n", m.Body.EnvId)
+	result, err := env.Launch(m.Body.EnvId)
 	if err != nil {
-		fmt.Printf("error during launch: \n", err)
+		fmt.Println("error during launch: \n", err)
 	}
-	fmt.Printf("from binary received: %s\n", result)
+	fmt.Println("from binary received: ", result)
 }
 
 func Reset(m *Message) {
-	fmt.Printf("reset message received: %s\n", m.Body.Env_id)
-	result, err := env.Reset(m.Body.Env_id)
+	fmt.Println("reset message received: %s\n", m.Body.EnvId)
+	result, err := env.Reset(m.Body.EnvId)
 	if err != nil {
-		fmt.Printf("error during reset: \n", err)
+		fmt.Println("error during reset: \n", err)
 	}
-	fmt.Printf("from binary received: %s\n", result)
+	fmt.Println("from binary received: ", result)
 }
 
 func Close(m *Message) {
-	fmt.Printf("close message received: %s\n", m.Body.Env_id)
-	result, err := env.Close(m.Body.Env_id)
+	fmt.Println("close message received: %s\n", m.Body.EnvId)
+	result, err := env.Close(m.Body.EnvId)
 	if err != nil {
-		fmt.Printf("error during close: \n", err)
+		fmt.Println("error during close: \n", err)
 	}
-	fmt.Printf("from binary received: %s\n", result)
+	fmt.Println("from binary received: ", result)
 }
