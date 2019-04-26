@@ -1,30 +1,26 @@
 package main
 
 import (
-	"log"
+	"math/rand"
 	"time"
 )
 
-func (c *AgentConn) RewardController() error {
+func RewardController(status, trigger chan string, reward chan float32) {
+
 	for {
-		c.SendReward(GetReward())
-		time.Sleep(time.Duration(1/c.envState.Fps) * time.Second)
+		if rand.Intn(10)%2 == 0 {
+			status <- "running"
+		} else {
+			status <- "resetting"
+		}
+		reward <- GetReward()
 	}
 
-}
-
-func (c *AgentConn) SendReward(m *Message) error {
-	err := c.ws.WriteJSON(&m)
-	if err != nil {
-		log.Println("write:", err)
-	}
-	return err
 }
 
 //Random function to generate get reward from environment
-func GetReward() *Message {
+func ConstructRewardMessage(reward float32) Message {
 	//env.GetReward()string
-	reward, _ := env.GetReward()
 
 	method := "v0.env.reward"
 
@@ -43,5 +39,15 @@ func GetReward() *Message {
 		Body:    body,
 	}
 
-	return &m
+	return m
+}
+
+//---------------------------
+// Environment Plugin Interface
+//---------------------------
+//GetReward: Random function to generate get reward from environment plugin
+func GetReward() float32 {
+	//env.GetReward()string
+	reward, _ := env.GetReward()
+	return reward
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"time"
 
 	plugin "github.com/hashicorp/go-plugin"
 	"github.com/sibeshkar/jiminy-env/shared"
@@ -50,6 +51,44 @@ func main() {
 	log.Fatal(http.ListenAndServe(":15900", nil))
 }
 
+func handler(w http.ResponseWriter, r *http.Request) {
+
+	agent_conn, err := NewAgentConn(w, r)
+	if err != nil {
+		log.Println(err)
+	}
+	fmt.Println("Connected to ", agent_conn.ws.RemoteAddr())
+	statusChan := make(chan string)
+	triggerChan := make(chan string)
+	rewardChan := make(chan float32)
+
+	go agent_conn.OnMessage()
+	go RewardController(statusChan, triggerChan, rewardChan)
+	//go EnvController(status)
+	//go agent_conn.RewardController()
+	interval := time.Duration(1000 / agent_conn.envState.Fps)
+	ticker := time.NewTicker(interval * time.Millisecond)
+
+	go func() {
+		i := 0
+		for {
+			select {
+			case <-ticker.C:
+				fmt.Println("Sending reward ", i)
+				agent_conn.Send(ConstructRewardMessage(<-rewardChan))
+				i++
+			case state := <-statusChan:
+				fmt.Println("Status is", state)
+			default:
+				fmt.Println("Default option")
+			}
+
+		}
+	}()
+
+	//go agent_conn.EnvController()
+}
+
 func pluginRPC() shared.Env {
 	log.SetOutput(ioutil.Discard)
 
@@ -80,19 +119,6 @@ func pluginRPC() shared.Env {
 	// We should have a KV store now! This feels like a normal interface
 	// implementation but is in fact over an RPC connection.
 	return raw.(shared.Env)
-}
-
-func handler(w http.ResponseWriter, r *http.Request) {
-
-	agent_conn, err := NewAgentConn(w, r)
-	if err != nil {
-		log.Println(err)
-	}
-	fmt.Println("Connected to ", agent_conn.ws.RemoteAddr())
-
-	go agent_conn.OnMessage()
-	go agent_conn.RewardController()
-	//go agent_conn.EnvController()
 }
 
 func NewAgentConn(w http.ResponseWriter, r *http.Request) (AgentConn, error) {
@@ -134,6 +160,14 @@ func (c *AgentConn) OnMessage() error {
 
 	}
 
+}
+
+func (c *AgentConn) Send(m Message) error {
+	err := c.ws.WriteJSON(&m)
+	if err != nil {
+		log.Println("write:", err)
+	}
+	return err
 }
 
 func Launch(m *Message) {

@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/hashicorp/go-plugin"
+	plugin "github.com/hashicorp/go-plugin"
 	"github.com/sibeshkar/jiminy-env/shared"
 )
 
@@ -33,6 +33,7 @@ func (Env) Close(key string) (string, error) {
 func (Env) GetReward() (float32, error) {
 	var err error
 	rand.Seed(time.Now().UnixNano())
+	//time.Sleep(100 * time.Millisecond)
 	reward := rand.Float32()
 	return reward, err
 }
