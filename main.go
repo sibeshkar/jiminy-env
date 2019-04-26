@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -16,7 +15,7 @@ import (
 )
 
 var upgrader = websocket.Upgrader{}
-var addr = flag.String("addr", "localhost:15900", "http service address")
+
 var env shared.Env
 
 var agent_conn AgentConn
@@ -48,7 +47,7 @@ type Message struct {
 func main() {
 	env = pluginRPC()
 	http.HandleFunc("/", handler)
-	log.Fatal(http.ListenAndServe(*addr, nil))
+	log.Fatal(http.ListenAndServe(":15900", nil))
 }
 
 func pluginRPC() shared.Env {
