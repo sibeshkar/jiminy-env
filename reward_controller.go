@@ -13,6 +13,7 @@ func RewardController(status, trigger chan string, reward chan float32) {
 		} else {
 			status <- "resetting"
 		}
+		time.Sleep(10 * time.Millisecond)
 		reward <- GetReward()
 	}
 
