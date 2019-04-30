@@ -6,7 +6,6 @@ import (
 )
 
 func RewardController(status, trigger chan string, reward chan float32) {
-
 	for {
 		if rand.Intn(10)%2 == 0 {
 			status <- "running"
@@ -49,6 +48,6 @@ func ConstructRewardMessage(reward float32) Message {
 //GetReward: Random function to generate get reward from environment plugin
 func GetReward() float32 {
 	//env.GetReward()string
-	reward, _ := env.GetReward()
+	reward, _, _ := env.GetReward()
 	return reward
 }

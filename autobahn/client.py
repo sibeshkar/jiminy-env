@@ -25,13 +25,22 @@ class RewarderProtocol(WebSocketClientProtocol):
         print("Text message received: {0}".format(payload['method']))
 
     def _send(self):
-        payload = {
+        payload_launch = {
             'method' : 'v0.env.launch',
             'body' : {
                 'env_id' : 'wob.mini.TicTacToe'
             }
         }
-        self.sendMessage(ujson.dumps(payload).encode('utf-8'), False)
+        self.sendMessage(ujson.dumps(payload_launch).encode('utf-8'), False)
+
+        payload_reset = {
+            'method' : 'v0.env.reset',
+            'body' : {
+                'env_id' : 'wob.mini.TicTacToe'
+            }
+        }
+
+        self.sendMessage(ujson.dumps(payload_reset).encode('utf-8'), False)
         #self.send()
     
     def send(self):

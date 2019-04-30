@@ -13,7 +13,6 @@ PLUGIN_FOLDER=./plugin-go-grpc
 all:build
 build:
 	$(GOBUILD) -o $(CONTROLLER_BINARY_NAME) -v
-	$(GOBUILD) -o $(PLUGIN_BINARY_NAME) $(PLUGIN_FOLDER)
 
 proto:
 	protoc -I proto/ proto/env.proto --go_out=plugins=grpc:proto/
@@ -22,7 +21,6 @@ test:
 clean: 
 	$(GOCLEAN)
 	rm -f $(PLUGIN_BINARY_NAME)
-	rm -f $(CONTROLLER_BINARY_NAME)
 run:
 	export ENV_PLUGIN="./$(PLUGIN_BINARY_NAME)"
 	./$(CONTROLLER_BINARY_NAME)

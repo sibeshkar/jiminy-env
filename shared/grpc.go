@@ -41,13 +41,13 @@ func (m *GRPCClient) Close(key string) (string, error) {
 	return resp.Status, nil
 }
 
-func (m *GRPCClient) GetReward() (float32, error) {
+func (m *GRPCClient) GetReward() (float32, bool, error) {
 	resp, err := m.client.GetReward(context.Background(), &proto.Empty{})
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
 
-	return resp.Reward, nil
+	return resp.Reward, resp.Done, nil
 }
 
 // Here is the gRPC server that GRPCClient talks to.
@@ -80,6 +80,6 @@ func (m *GRPCServer) Close(
 func (m *GRPCServer) GetReward(
 	ctx context.Context,
 	req *proto.Empty) (*proto.Reward, error) {
-	v, err := m.Impl.GetReward()
-	return &proto.Reward{Reward: v}, err
+	v, d, err := m.Impl.GetReward()
+	return &proto.Reward{Reward: v, Done: d}, err
 }

@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"time"
 
 	plugin "github.com/hashicorp/go-plugin"
 	"github.com/sibeshkar/jiminy-env/shared"
@@ -58,33 +57,60 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 	fmt.Println("Connected to ", agent_conn.ws.RemoteAddr())
-	statusChan := make(chan string)
-	triggerChan := make(chan string)
-	rewardChan := make(chan float32)
 
+	// statusChan := make(chan string)
+	// triggerChan := make(chan string)
 	go agent_conn.OnMessage()
-	go RewardController(statusChan, triggerChan, rewardChan)
-	//go EnvController(status)
-	//go agent_conn.RewardController()
-	interval := time.Duration(1000 / agent_conn.envState.Fps)
-	ticker := time.NewTicker(interval * time.Millisecond)
 
-	go func() {
-		i := 0
-		for {
-			select {
-			case <-ticker.C:
-				fmt.Println("Sending reward ", i)
-				agent_conn.Send(ConstructRewardMessage(<-rewardChan))
-				i++
-			case state := <-statusChan:
-				fmt.Println("Status is", state)
-			default:
-				fmt.Println("Default option")
-			}
+	// go func() {
 
-		}
-	}()
+	// 	for {
+	// 		select {
+	// 		case status := <-statusChan:
+	// 			switch status {
+	// 			case "launching":
+	// 				fmt.Println("Runtime is launching")
+	// 			case "resetting":
+	// 				fmt.Println("Env is resetting")
+	// 			case "running":
+	// 				fmt.Println("Env is running")
+	// 			}
+	// 		case trigger := <-triggerChan:
+	// 			switch trigger {
+	// 			case "launch":
+	// 				Launch(&m)
+	// 			case "reset":
+	// 				Reset(&m)
+	// 			}
+	// 		}
+	// 	}
+	// }()
+
+	// statusChan := make(chan string)
+	// triggerChan := make(chan string)
+	// rewardChan := make(chan float32)
+
+	// go RewardController(statusChan, triggerChan, rewardChan)
+	// // //go EnvController(status)
+	// // //go agent_conn.RewardController()
+	// ticker := time.NewTicker(time.Duration(1000/agent_conn.envState.Fps) * time.Millisecond)
+
+	// go func() {
+	// 	i := 0
+	// 	for {
+	// 		select {
+	// 		case <-ticker.C:
+	// 			fmt.Println("Sending reward ", i)
+	// 			agent_conn.Send(ConstructRewardMessage(<-rewardChan))
+	// 			i++
+	// 		case state := <-statusChan:
+	// 			fmt.Println("Status is", state)
+	// 			// default:
+	// 			// 	fmt.Println("Default option")
+	// 		}
+
+	// 	}
+	// }()
 
 	//go agent_conn.EnvController()
 }
@@ -129,7 +155,7 @@ func NewAgentConn(w http.ResponseWriter, r *http.Request) (AgentConn, error) {
 		log.Println(err)
 	}
 
-	envState, err := NewEnvState("wob.mini.TicTacToe", "resetting", 1, 60)
+	envState, err := NewEnvState("wob.mini.TicTacToe", "resetting", 1, 2)
 	agent_conn := AgentConn{
 		ws:       conn,
 		envState: envState,
@@ -173,6 +199,7 @@ func (c *AgentConn) Send(m Message) error {
 func Launch(m *Message) {
 	fmt.Printf("launch message received: %s\n", m.Body.EnvId)
 	result, err := env.Launch(m.Body.EnvId)
+	//_, err = env.Reset(m.Body.EnvId)
 	if err != nil {
 		fmt.Println("error during launch: \n", err)
 	}
