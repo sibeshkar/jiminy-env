@@ -1,0 +1,156 @@
+package shared
+
+import (
+	"compress/flate"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"strings"
+
+	"github.com/mholt/archiver"
+	"github.com/sibeshkar/jiminy-env/utils"
+	"github.com/spf13/viper"
+)
+
+type PluginConfig struct {
+	Repository  string
+	EnvName     string
+	Tasks       []string
+	Tag         string
+	Link        string
+	Directory   string
+	BinaryFile  string
+	IncludeDirs []string
+}
+
+func CreatePluginConfig(link string) PluginConfig {
+
+	var linkString []string = strings.Split(link, "/")
+	var envName []string = strings.Split(linkString[1], "-")
+
+	homedir := utils.UserHomeDir()
+	config := PluginConfig{
+		Repository: linkString[0],
+		EnvName:    envName[0],
+		Tag:        envName[1],
+		Link:       link,
+		Directory:  homedir + "/" + ".jiminy/plugins/" + linkString[0] + "/" + linkString[1] + "/",
+		BinaryFile: homedir + "/" + ".jiminy/plugins/" + linkString[0] + "/" + linkString[1] + "/" + linkString[1],
+	}
+
+	return config
+}
+
+//Install plugin from local folder (make sure config.json is present)
+func Install(filepath string) {
+	var t PluginConfig
+
+	viper.SetConfigName("config")
+	viper.AddConfigPath(filepath)
+	viper.SetConfigType("json")
+
+	fileDir := utils.AbsPathify(filepath)
+	fmt.Println(fileDir)
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalf("Error reading config file, %s", err)
+	}
+
+	err := viper.Unmarshal(&t)
+	if err != nil {
+		log.Fatalf("unable to decode into struct, %v", err)
+	}
+
+	z := archiver.Zip{
+		CompressionLevel:       flate.DefaultCompression,
+		MkdirAll:               true,
+		SelectiveCompression:   true,
+		ContinueOnError:        true,
+		OverwriteExisting:      true,
+		ImplicitTopLevelFolder: false,
+	}
+
+	os.Remove(t.BinaryFile + ".zip")
+
+	// List of Files to Zip
+	err = z.Archive(append(t.IncludeDirs, t.BinaryFile, "config.json"), t.BinaryFile+".zip")
+	if err != nil {
+		fmt.Println("error in archiving")
+	}
+
+	// m := CreatePluginConfig(t.Link)
+	// m.Tasks = t.Tasks
+	// m.IncludeDirs = t.IncludeDirs
+
+	// if exist, _ := utils.Exists(m.Directory); exist != true {
+	// 	os.MkdirAll(m.Directory, os.ModePerm)
+	// }
+
+	// file, _ := json.MarshalIndent(m, "", " ")
+
+	// _ = ioutil.WriteFile(m.Directory+"config.json", file, 0644)
+
+	// err = archiver.Unarchive(t.BinaryFile+".zip", m.Directory)
+	InstallFromArchive(t.BinaryFile + ".zip")
+
+}
+
+func InstallFromArchive(zipfile string) {
+
+	z := archiver.Zip{
+		CompressionLevel:       flate.DefaultCompression,
+		MkdirAll:               true,
+		SelectiveCompression:   true,
+		ContinueOnError:        true,
+		OverwriteExisting:      true,
+		ImplicitTopLevelFolder: false,
+	}
+
+	stringName := strings.Split(zipfile, ".")
+
+	var t PluginConfig
+
+	filePath := "tmp" + stringName[0]
+	fmt.Println(filePath)
+
+	err := z.Unarchive(zipfile, filePath)
+	if err != nil {
+		fmt.Println("Error unarchiving from temp dir")
+	}
+
+	viper.SetConfigName("config")
+	viper.AddConfigPath(filePath)
+	viper.SetConfigType("json")
+
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalf("Error reading config file, %s", err)
+	}
+
+	err = viper.Unmarshal(&t)
+	if err != nil {
+		log.Fatalf("unable to decode into struct, %v", err)
+	}
+
+	m := CreatePluginConfig(t.Link)
+	m.Tasks = t.Tasks
+	m.IncludeDirs = t.IncludeDirs
+
+	if exist, _ := utils.Exists(m.Directory); exist != true {
+		os.MkdirAll(m.Directory, os.ModePerm)
+	}
+
+	err = z.Unarchive(zipfile, m.Directory)
+
+	file, _ := json.MarshalIndent(m, "", " ")
+
+	_ = ioutil.WriteFile(m.Directory+"config.json", file, 0644)
+
+	//utils.CopyDir(filePath, m.Directory)
+	os.RemoveAll(filePath)
+
+}
+
+func InstallFromLink(link string) {
+	return
+}

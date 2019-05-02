@@ -28,7 +28,7 @@ class RewarderProtocol(WebSocketClientProtocol):
         payload_launch = {
             'method' : 'v0.env.launch',
             'body' : {
-                'env_id' : 'wob.mini.TicTacToe'
+                'env_id' : 'sibeshkar/wob-v0'
             }
         }
         self.sendMessage(ujson.dumps(payload_launch).encode('utf-8'), False)

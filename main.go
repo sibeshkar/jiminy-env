@@ -8,11 +8,19 @@ import (
 	"os"
 	"os/exec"
 
-	plugin "github.com/hashicorp/go-plugin"
+	"github.com/hashicorp/go-plugin"
 	"github.com/sibeshkar/jiminy-env/shared"
+	"github.com/urfave/cli"
 
 	"github.com/gorilla/websocket"
 )
+
+var EnvPlugin shared.PluginConfig
+
+//jiminy run sibeshkar/wob-v0/TicTacToe
+//jiminy build .
+//jiminy pull sibeshkar/wob-v0/TicTacToe
+//jiminy push sibeshkar/wob-v0/TicTacToe
 
 var upgrader = websocket.Upgrader{}
 
@@ -45,9 +53,46 @@ type Message struct {
 }
 
 func main() {
-	env = pluginRPC()
+
+	app := cli.NewApp()
+
+	app.Commands = []cli.Command{
+		{
+			Name:    "run",
+			Aliases: []string{"a"},
+			Usage:   "run a given environment",
+			Action: func(c *cli.Context) error {
+				fmt.Println("added task: ", c.Args().First())
+				Run(c.Args().First())
+				return nil
+			},
+		},
+		{
+			Name:    "install",
+			Aliases: []string{"c"},
+			Usage:   "complete a task on the list",
+			Action: func(c *cli.Context) error {
+				fmt.Println("the directory is ", c.Args().First())
+				shared.Install(c.Args().First())
+				return nil
+			},
+		},
+	}
+
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func Run(pluginLink string) {
+
+	EnvPlugin = shared.CreatePluginConfig(pluginLink)
+	env = pluginRPC(&EnvPlugin)
 	http.HandleFunc("/", handler)
 	log.Fatal(http.ListenAndServe(":15900", nil))
+
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +122,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	// 			}
 	// 		case trigger := <-triggerChan:
 	// 			switch trigger {
-	// 			case "launch":
+	// 			case pluginObj *shared.PluginConfig"launch":
 	// 				Launch(&m)
 	// 			case "reset":
 	// 				Reset(&m)
@@ -115,14 +160,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	//go agent_conn.EnvController()
 }
 
-func pluginRPC() shared.Env {
+func pluginRPC(pluginObj *shared.PluginConfig) shared.Env {
 	log.SetOutput(ioutil.Discard)
 
 	// We're a host. Start by launching the plugin process.
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: shared.Handshake,
 		Plugins:         shared.PluginMap,
-		Cmd:             exec.Command("sh", "-c", os.Getenv("ENV_PLUGIN")),
+		Cmd:             exec.Command("sh", "-c", pluginObj.BinaryFile),
 		AllowedProtocols: []plugin.Protocol{
 			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
 	})
