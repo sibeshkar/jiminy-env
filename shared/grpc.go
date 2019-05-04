@@ -8,6 +8,17 @@ import (
 // GRPCClient is an implementation of Env that talks over RPC.
 type GRPCClient struct{ client proto.EnvClient }
 
+func (m *GRPCClient) Init(key string) (string, error) {
+	resp, err := m.client.Init(context.Background(), &proto.Request{
+		EnvId: key,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return resp.Status, nil
+}
+
 func (m *GRPCClient) Launch(key string) (string, error) {
 	resp, err := m.client.Launch(context.Background(), &proto.Request{
 		EnvId: key,
@@ -54,6 +65,14 @@ func (m *GRPCClient) GetReward() (float32, bool, error) {
 type GRPCServer struct {
 	// This is the real implementation
 	Impl Env
+}
+
+//Pre-launch stuff initialized here
+func (m *GRPCServer) Init(
+	ctx context.Context,
+	req *proto.Request) (*proto.Response, error) {
+	v, err := m.Impl.Init(req.EnvId)
+	return &proto.Response{Status: v}, err
 }
 
 func (m *GRPCServer) Launch(

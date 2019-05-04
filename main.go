@@ -90,6 +90,7 @@ func Run(pluginLink string) {
 
 	EnvPlugin = shared.CreatePluginConfig(pluginLink)
 	env = pluginRPC(&EnvPlugin)
+	go env.Init(pluginLink)
 	http.HandleFunc("/", handler)
 	log.Fatal(http.ListenAndServe(":15900", nil))
 

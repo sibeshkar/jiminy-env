@@ -76,7 +76,7 @@ func Install(filepath string) {
 	// List of Files to Zip
 	err = z.Archive(append(t.IncludeDirs, t.BinaryFile, "config.json"), t.BinaryFile+".zip")
 	if err != nil {
-		fmt.Println("error in archiving")
+		fmt.Println(err)
 	}
 
 	// m := CreatePluginConfig(t.Link)
@@ -92,6 +92,7 @@ func Install(filepath string) {
 	// _ = ioutil.WriteFile(m.Directory+"config.json", file, 0644)
 
 	// err = archiver.Unarchive(t.BinaryFile+".zip", m.Directory)
+	//os.Remove(t.BinaryFile)
 	InstallFromArchive(t.BinaryFile + ".zip")
 
 }
@@ -139,6 +140,8 @@ func InstallFromArchive(zipfile string) {
 	if exist, _ := utils.Exists(m.Directory); exist != true {
 		os.MkdirAll(m.Directory, os.ModePerm)
 	}
+
+	os.Remove(m.BinaryFile)
 
 	err = z.Unarchive(zipfile, m.Directory)
 
