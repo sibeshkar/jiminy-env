@@ -3,7 +3,13 @@ package main
 //refer : https://gist.github.com/ImJasonH/6713e855b431a0c067afea4b74cbf504
 
 import (
+	"encoding/json"
+	"io/ioutil"
+	"log"
 	"sync"
+
+	"github.com/sibeshkar/jiminy-env/utils"
+	"github.com/spf13/viper"
 )
 
 type EnvState struct {
@@ -30,13 +36,41 @@ func NewEnvState(EnvId string, EnvStatus string, EpisodeId int, Fps float32) (*E
 		Fps:       Fps,
 	}
 
+	envStatus.WriteEnvState()
+
 	return &envStatus, err
+}
+
+func (e *EnvState) LoadEnvState() {
+	e.Lock()
+	defer e.Unlock()
+	viper.SetConfigName("env")
+	viper.AddConfigPath(utils.TempDir())
+	viper.SetConfigType("json")
+
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalf("Error reading config file, %s", err)
+	}
+
+	err := viper.Unmarshal(e)
+	if err != nil {
+		log.Fatalf("unable to decode into struct, %v", err)
+	}
+}
+
+func (e *EnvState) WriteEnvState() {
+
+	file, _ := json.MarshalIndent(e, "", " ")
+
+	_ = ioutil.WriteFile(utils.TempDir()+"env.json", file, 0644)
+
 }
 
 func (e *EnvState) SetEnvId(EnvId string) bool {
 	e.Lock()
 	defer e.Unlock()
 	e.EnvId = EnvId
+	e.WriteEnvState()
 	return true
 }
 
@@ -44,6 +78,7 @@ func (e *EnvState) SetEnvStatus(EnvStatus string) bool {
 	e.Lock()
 	defer e.Unlock()
 	e.EnvStatus = EnvStatus
+	e.WriteEnvState()
 	return true
 }
 
@@ -51,6 +86,7 @@ func (e *EnvState) SetEpisodeId(EpisodeId int) bool {
 	e.Lock()
 	defer e.Unlock()
 	e.EpisodeId = EpisodeId
+	e.WriteEnvState()
 	return true
 }
 
@@ -58,6 +94,7 @@ func (e *EnvState) SetFps(Fps float32) bool {
 	e.Lock()
 	defer e.Unlock()
 	e.Fps = Fps
+	e.WriteEnvState()
 	return true
 }
 

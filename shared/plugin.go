@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/mholt/archiver"
@@ -30,7 +31,7 @@ func CreatePluginConfig(link string) PluginConfig {
 	var linkString []string = strings.Split(link, "/")
 	var envName []string = strings.Split(linkString[1], "-")
 
-	homedir := utils.UserHomeDir()
+	homedir := UserHomeDir()
 	config := PluginConfig{
 		Repository: linkString[0],
 		EnvName:    envName[0],
@@ -43,21 +44,45 @@ func CreatePluginConfig(link string) PluginConfig {
 	return config
 }
 
+func UserHomeDir() string {
+	switch runtime.GOOS {
+	case "windows":
+		return os.Getenv("USERPROFILE")
+	case "plan9":
+		return os.Getenv("home")
+	case "nacl", "android":
+		return "/"
+	case "darwin":
+		if runtime.GOARCH == "arm" || runtime.GOARCH == "arm64" {
+			return "/"
+		}
+		fallthrough
+	default:
+		return os.Getenv("HOME")
+	}
+}
+
 //Install plugin from local folder (make sure config.json is present)
 func Install(filepath string) {
 	var t PluginConfig
 
+	fileDir := utils.AbsPathify(filepath)
+
+	err := os.Chdir(fileDir)
+	if err != nil {
+		panic(err)
+	}
+
 	viper.SetConfigName("config")
-	viper.AddConfigPath(filepath)
+	viper.AddConfigPath(fileDir)
 	viper.SetConfigType("json")
 
-	fileDir := utils.AbsPathify(filepath)
 	fmt.Println(fileDir)
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatalf("Error reading config file, %s", err)
 	}
 
-	err := viper.Unmarshal(&t)
+	err = viper.Unmarshal(&t)
 	if err != nil {
 		log.Fatalf("unable to decode into struct, %v", err)
 	}
@@ -108,11 +133,11 @@ func InstallFromArchive(zipfile string) {
 		ImplicitTopLevelFolder: false,
 	}
 
-	stringName := strings.Split(zipfile, ".")
+	stringName := strings.TrimRight(zipfile, ".zip")
 
 	var t PluginConfig
 
-	filePath := "tmp" + stringName[0]
+	filePath := stringName + "-tmp"
 	fmt.Println(filePath)
 
 	err := z.Unarchive(zipfile, filePath)

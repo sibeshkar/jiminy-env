@@ -5,21 +5,19 @@ import (
 	"time"
 )
 
-func RewardController(status, trigger chan string, reward chan float32) {
+func RewardController(status, trigger chan string, rewardChan chan Body) {
 	for {
 		if rand.Intn(10)%2 == 0 {
 			status <- "running"
 		} else {
 			status <- "resetting"
 		}
-		time.Sleep(10 * time.Millisecond)
-		reward <- GetReward()
 	}
 
 }
 
 //Random function to generate get reward from environment
-func ConstructRewardMessage(reward float32) Message {
+func ConstructRewardMessage(reward Body) Message {
 	//env.GetReward()string
 
 	method := "v0.env.reward"
@@ -30,7 +28,8 @@ func ConstructRewardMessage(reward float32) Message {
 
 	body := Body{
 		EnvId:  "wob.mini.TicTacToe",
-		Reward: reward,
+		Reward: reward.Reward,
+		Done:   reward.Done,
 	}
 
 	m := Message{
@@ -46,8 +45,13 @@ func ConstructRewardMessage(reward float32) Message {
 // Environment Plugin Interface
 //---------------------------
 //GetReward: Random function to generate get reward from environment plugin
-func GetReward() float32 {
+func GetReward() Body {
 	//env.GetReward()string
-	reward, _, _ := env.GetReward()
-	return reward
+	reward, done, _ := env.GetReward()
+	reply := Body{
+		Reward: reward,
+		Done:   done,
+	}
+
+	return reply
 }

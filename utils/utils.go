@@ -72,3 +72,21 @@ func GetExecutablePath() string {
 	return exPath
 
 }
+
+func PluginDir() string {
+	dir := UserHomeDir() + "/" + ".jiminy/plugins/"
+	if exist, _ := Exists(dir); exist != true {
+		os.MkdirAll(dir, os.ModePerm)
+	}
+
+	return dir
+}
+
+func TempDir() string {
+	dir := UserHomeDir() + "/" + ".jiminy/tmp/"
+	if exist, _ := Exists(dir); exist != true {
+		os.MkdirAll(dir, os.ModePerm)
+	}
+
+	return dir
+}
