@@ -9,6 +9,7 @@ CONTROLLER_BINARY_UNIX=$(CONTROLLER_BINARY_NAME)_unix
 PLUGIN_BINARY_NAME=env-go-grpc
 PLUGIN_BINARY_UNIX=$(PLUGIN_BINARY_NAME)_unix
 PLUGIN_FOLDER=./plugin-go-grpc
+VERSION=0.1.0
 
 all:build
 build:
@@ -28,6 +29,14 @@ run:
 install:
 	$(GOBUILD) -o $(GOPATH)/bin/$(CONTROLLER_BINARY_NAME)
 
+docker:
+	$(GOBUILD) -o $(CONTROLLER_BINARY_NAME) -v
+	jiminy install ../plugin-go-grpc/
+	cp ../plugin-go-grpc/wob-v0.zip .
+	docker build . -t sibeshkar/jiminy-env:$(VERSION)
+
+make docker-run:
+	docker run -it --rm -p 5900:5900 -p 15900:15900 sibeshkar/jiminy-env:$(VERSION)
 
 # Cross compilation
 build-linux:
