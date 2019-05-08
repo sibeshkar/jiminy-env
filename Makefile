@@ -35,7 +35,7 @@ docker:
 	cp ../plugin-go-grpc/wob-v0.zip .
 	docker build . -t sibeshkar/jiminy-env:$(VERSION)
 
-make docker-run:
+docker-run:
 	docker run -it --rm -p 5900:5900 -p 15900:15900 sibeshkar/jiminy-env:$(VERSION)
 
 # Cross compilation
