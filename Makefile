@@ -31,9 +31,8 @@ install:
 
 docker:
 	$(GOBUILD) -o $(CONTROLLER_BINARY_NAME) -v
-	jiminy install ../plugin-go-grpc/
-	cp ../plugin-go-grpc/wob-v0.zip .
-	docker build . -t sibeshkar/jiminy-env:$(VERSION)
+	jiminy install plugin-go-grpc/
+	docker build . -t sibeshkar/jiminy-env:$(VERSION) --force-rm
 
 docker-run:
 	docker run -it --rm -p 5900:5900 -p 15900:15900 sibeshkar/jiminy-env:$(VERSION)

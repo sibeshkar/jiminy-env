@@ -62,7 +62,7 @@ func main() {
 		{
 			Name:    "run",
 			Aliases: []string{"a"},
-			Usage:   "run a given environment",
+			Usage:   "Run an installed environment. e.g. sibeshkar/wob-v0",
 			Action: func(c *cli.Context) error {
 				fmt.Println("added task: ", c.Args().First())
 				Run(c.Args().First())
@@ -72,7 +72,7 @@ func main() {
 		{
 			Name:    "install",
 			Aliases: []string{"c"},
-			Usage:   "complete a task on the list",
+			Usage:   "Install env plugin from directory or zip file.",
 			Action: func(c *cli.Context) error {
 				fmt.Println("the directory is ", c.Args().First())
 				var format []string = strings.Split(c.Args().First(), ".")

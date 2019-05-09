@@ -34,7 +34,7 @@ $ python -m grpc_tools.protoc -I ./proto/ --python_out=./plugin-python/ --grpc_p
 Network architecture
 ====================
 
-A Universe environment consists of two components that run in
+A Jiminy environment consists of two components that run in
 separate processes and communicate over the network.  The agent's
 machine runs the environment **client** code, which connects
 to the **remote** environment server.
@@ -83,7 +83,7 @@ spec, and in other tutorials elsewhere on the internet.
 Rewarder protocol
 =================
 
-The Rewarder protocol is a Universe-specific bi-directional JSON
+The Rewarder protocol is a Jiminy-specific bi-directional JSON
 protocol run over WebSockets. In addition to the actions and
 observations provided by the VNC connection, the rewarder connection
 allows the agent to submit control commands to the environment, and to
