@@ -36,10 +36,10 @@ type AgentConn struct {
 }
 
 type Headers struct {
-	Sent_at         int64  `json:"sent_at"`
-	MessageId       string `json:"message_id"`
-	ParentMessageId string `json:"parent_message_id"`
-	EpisodeId       string `json:"episode_id"`
+	Sent_at         int64   `json:"sent_at"`
+	MessageId       string  `json:"message_id"`
+	ParentMessageId string  `json:"parent_message_id"`
+	EpisodeId       float32 `json:"episode_id"`
 }
 
 type Body struct {
@@ -122,8 +122,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		case "resetting":
 			fmt.Println("Env is resetting to task")
 		case "running":
-			reply := GetReward()
-			agent_conn.SendToAgent(ConstructRewardMessage(reply))
+			agent_conn.SendEnvReward()
 			fmt.Println("Environment is running")
 		}
 
@@ -205,14 +204,6 @@ func (c *AgentConn) OnMessage() error {
 
 }
 
-func (c *AgentConn) SendToAgent(m Message) error {
-	err := c.ws.WriteJSON(&m)
-	if err != nil {
-		log.Println("write:", err)
-	}
-	return err
-}
-
 func (c *AgentConn) Launch(m *Message) {
 	fmt.Printf("launch message received: %s\n", m.Body.EnvId)
 	c.envState.SetEnvStatus("launching")
@@ -245,6 +236,60 @@ func (c *AgentConn) Close(m *Message) {
 		fmt.Println("error during close: \n", err)
 	}
 	fmt.Println("from binary received: ", result)
+}
+
+//Send a message to connected Agent
+func (c *AgentConn) SendMessage(m Message) error {
+	err := c.ws.WriteJSON(&m)
+	if err != nil {
+		log.Println("write:", err)
+	}
+	return err
+}
+
+//Required function of AgentConn
+//
+func (c *AgentConn) SendEnvText(text string, episode_id float32) {
+
+}
+
+func (c *AgentConn) SendEnvObservation(observation []byte, episode_id float32) {
+
+}
+
+func (c *AgentConn) SendEnvReward() {
+
+	reward, done, _ := env.GetReward()
+
+	method := "v0.env.reward"
+
+	headers := Headers{
+		Sent_at:   time.Now().Unix(),
+		EpisodeId: c.envState.GetEpisodeId(),
+	}
+
+	body := Body{
+		EnvId:  c.envState.GetEnvId(),
+		Reward: reward,
+		Done:   done,
+	}
+
+	m := Message{
+		Method:  method,
+		Headers: headers,
+		Body:    body,
+	}
+
+	c.SendMessage(m)
+
+}
+
+func (c *AgentConn) SendEnvDescribe(reward float32, done bool, info []byte, episode_id float32) {
+
+}
+
+func (c *AgentConn) SendReplyError() {
+
 }
 
 // go func() {
