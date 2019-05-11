@@ -149,6 +149,100 @@ func (m *Reward) GetDone() bool {
 	return false
 }
 
+type Info struct {
+	Type                 string   `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	Info                 []byte   `protobuf:"bytes,2,opt,name=info,proto3" json:"info,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Info) Reset()         { *m = Info{} }
+func (m *Info) String() string { return proto.CompactTextString(m) }
+func (*Info) ProtoMessage()    {}
+func (*Info) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bbfacb289c786e17, []int{3}
+}
+
+func (m *Info) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Info.Unmarshal(m, b)
+}
+func (m *Info) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Info.Marshal(b, m, deterministic)
+}
+func (m *Info) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Info.Merge(m, src)
+}
+func (m *Info) XXX_Size() int {
+	return xxx_messageInfo_Info.Size(m)
+}
+func (m *Info) XXX_DiscardUnknown() {
+	xxx_messageInfo_Info.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Info proto.InternalMessageInfo
+
+func (m *Info) GetType() string {
+	if m != nil {
+		return m.Type
+	}
+	return ""
+}
+
+func (m *Info) GetInfo() []byte {
+	if m != nil {
+		return m.Info
+	}
+	return nil
+}
+
+type Observation struct {
+	Type                 string   `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	Obs                  []byte   `protobuf:"bytes,2,opt,name=obs,proto3" json:"obs,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Observation) Reset()         { *m = Observation{} }
+func (m *Observation) String() string { return proto.CompactTextString(m) }
+func (*Observation) ProtoMessage()    {}
+func (*Observation) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bbfacb289c786e17, []int{4}
+}
+
+func (m *Observation) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Observation.Unmarshal(m, b)
+}
+func (m *Observation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Observation.Marshal(b, m, deterministic)
+}
+func (m *Observation) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Observation.Merge(m, src)
+}
+func (m *Observation) XXX_Size() int {
+	return xxx_messageInfo_Observation.Size(m)
+}
+func (m *Observation) XXX_DiscardUnknown() {
+	xxx_messageInfo_Observation.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Observation proto.InternalMessageInfo
+
+func (m *Observation) GetType() string {
+	if m != nil {
+		return m.Type
+	}
+	return ""
+}
+
+func (m *Observation) GetObs() []byte {
+	if m != nil {
+		return m.Obs
+	}
+	return nil
+}
+
 type Empty struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -159,7 +253,7 @@ func (m *Empty) Reset()         { *m = Empty{} }
 func (m *Empty) String() string { return proto.CompactTextString(m) }
 func (*Empty) ProtoMessage()    {}
 func (*Empty) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bbfacb289c786e17, []int{3}
+	return fileDescriptor_bbfacb289c786e17, []int{5}
 }
 
 func (m *Empty) XXX_Unmarshal(b []byte) error {
@@ -184,27 +278,34 @@ func init() {
 	proto.RegisterType((*Request)(nil), "proto.Request")
 	proto.RegisterType((*Response)(nil), "proto.Response")
 	proto.RegisterType((*Reward)(nil), "proto.Reward")
+	proto.RegisterType((*Info)(nil), "proto.Info")
+	proto.RegisterType((*Observation)(nil), "proto.Observation")
 	proto.RegisterType((*Empty)(nil), "proto.Empty")
 }
 
 func init() { proto.RegisterFile("env.proto", fileDescriptor_bbfacb289c786e17) }
 
 var fileDescriptor_bbfacb289c786e17 = []byte{
-	// 220 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x8f, 0xcf, 0x4a, 0xc4, 0x30,
-	0x10, 0xc6, 0xc9, 0xba, 0xc9, 0x6e, 0x07, 0xff, 0x40, 0x40, 0x59, 0xf6, 0x54, 0x72, 0xb1, 0x5e,
-	0x7a, 0x50, 0xdf, 0x40, 0x8a, 0x14, 0x3c, 0xe5, 0x05, 0xa4, 0x9a, 0x01, 0x0b, 0x3a, 0xa9, 0xcd,
-	0x34, 0xe2, 0x93, 0xfa, 0x3a, 0xd2, 0x18, 0x7a, 0xb5, 0xa7, 0x99, 0x1f, 0xdf, 0xef, 0xf0, 0x7d,
-	0x50, 0x20, 0xc5, 0x7a, 0x18, 0x3d, 0x7b, 0x2d, 0xd3, 0x31, 0x25, 0xec, 0x2c, 0x7e, 0x4e, 0x18,
-	0x58, 0x5f, 0x82, 0x42, 0x8a, 0xcf, 0xbd, 0x3b, 0x88, 0x52, 0x54, 0x85, 0x95, 0x48, 0xb1, 0x75,
-	0xc6, 0xc0, 0xde, 0x62, 0x18, 0x3c, 0x05, 0xd4, 0x57, 0xa0, 0x02, 0x77, 0x3c, 0x85, 0xac, 0x64,
-	0x32, 0xf7, 0xa0, 0x2c, 0x7e, 0x75, 0xa3, 0x9b, 0x8d, 0x31, 0x7d, 0xc9, 0xd8, 0xd8, 0x4c, 0x5a,
-	0xc3, 0xd6, 0x79, 0xc2, 0xc3, 0xa6, 0x14, 0xd5, 0xde, 0xa6, 0xdf, 0xec, 0x40, 0x36, 0x1f, 0x03,
-	0x7f, 0xdf, 0xfe, 0x08, 0x38, 0x69, 0x28, 0xea, 0x6b, 0xd8, 0xb6, 0xd4, 0xb3, 0x3e, 0xff, 0xeb,
-	0x58, 0xe7, 0x66, 0xc7, 0x8b, 0x85, 0x73, 0x8f, 0x1b, 0x50, 0x4f, 0xdd, 0x44, 0xaf, 0x6f, 0xff,
-	0xab, 0x15, 0x48, 0x8b, 0x01, 0x79, 0x95, 0xf9, 0xf0, 0xee, 0x03, 0xae, 0x31, 0x8b, 0x47, 0xe4,
-	0xbc, 0xf8, 0x34, 0xa7, 0x69, 0xca, 0xf1, 0x6c, 0x71, 0xe7, 0xf0, 0x45, 0x25, 0xba, 0xfb, 0x0d,
-	0x00, 0x00, 0xff, 0xff, 0xae, 0x1e, 0xbd, 0xc1, 0x79, 0x01, 0x00, 0x00,
+	// 295 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x91, 0xdd, 0x4a, 0xc3, 0x40,
+	0x10, 0x85, 0x49, 0xda, 0xa4, 0xcd, 0xb4, 0xfe, 0x2d, 0x28, 0xa5, 0x57, 0x61, 0x6f, 0x4c, 0x6f,
+	0x72, 0x61, 0x05, 0x1f, 0x40, 0x42, 0x29, 0x08, 0xc2, 0xbe, 0x80, 0x24, 0x66, 0x8a, 0x01, 0xdd,
+	0x8d, 0xd9, 0xcd, 0x4a, 0x9f, 0xcd, 0x97, 0x93, 0xdd, 0x0e, 0xa5, 0x14, 0xa1, 0xbd, 0xca, 0x39,
+	0x39, 0xdf, 0x99, 0x30, 0x13, 0x48, 0x50, 0xda, 0xbc, 0xed, 0x94, 0x51, 0x2c, 0xf2, 0x0f, 0x9e,
+	0xc2, 0x48, 0xe0, 0x77, 0x8f, 0xda, 0xb0, 0x5b, 0x88, 0x51, 0xda, 0xb7, 0xa6, 0x9e, 0x05, 0x69,
+	0x90, 0x25, 0x22, 0x42, 0x69, 0xd7, 0x35, 0xe7, 0x30, 0x16, 0xa8, 0x5b, 0x25, 0x35, 0xb2, 0x3b,
+	0x88, 0xb5, 0x29, 0x4d, 0xaf, 0x09, 0x21, 0xc7, 0x1f, 0x21, 0x16, 0xf8, 0x53, 0x76, 0xb5, 0x23,
+	0x3a, 0xaf, 0x3c, 0x11, 0x0a, 0x72, 0x8c, 0xc1, 0xb0, 0x56, 0x12, 0x67, 0x61, 0x1a, 0x64, 0x63,
+	0xe1, 0x35, 0xcf, 0x61, 0xb8, 0x96, 0x1b, 0xe5, 0x32, 0xb3, 0x6d, 0x91, 0x66, 0x7a, 0xed, 0xde,
+	0x35, 0x72, 0xa3, 0x3c, 0x3f, 0x15, 0x5e, 0xf3, 0x25, 0x4c, 0x5e, 0x2b, 0x8d, 0x9d, 0x2d, 0x4d,
+	0xa3, 0xe4, 0xbf, 0xb5, 0x6b, 0x18, 0xa8, 0x4a, 0x53, 0xcb, 0x49, 0x3e, 0x82, 0xa8, 0xf8, 0x6a,
+	0xcd, 0xf6, 0xe1, 0x37, 0x84, 0x41, 0x21, 0x2d, 0xbb, 0x77, 0x5f, 0x6d, 0x0c, 0xbb, 0xdc, 0x1d,
+	0x22, 0xa7, 0xf5, 0xe7, 0x57, 0x7b, 0x4f, 0xcb, 0x2e, 0x20, 0x7e, 0x29, 0x7b, 0xf9, 0xfe, 0x71,
+	0x1a, 0xcd, 0x20, 0x12, 0xa8, 0xd1, 0x9c, 0x45, 0x3e, 0x7f, 0x2a, 0x8d, 0xe7, 0x90, 0xc9, 0x0a,
+	0x0d, 0x9d, 0x75, 0x4a, 0xa9, 0x5f, 0x65, 0x7e, 0xb1, 0x67, 0x7d, 0xf8, 0x04, 0x37, 0x2b, 0x34,
+	0x85, 0xb4, 0x87, 0xd7, 0x39, 0x9e, 0xcf, 0xc8, 0x1f, 0x32, 0x0b, 0x80, 0x5d, 0xd1, 0xff, 0x86,
+	0xe3, 0xc6, 0x84, 0xbc, 0x0b, 0xab, 0xd8, 0xeb, 0xe5, 0x5f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xb0,
+	0x9b, 0xf0, 0xc4, 0x42, 0x02, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -224,6 +325,8 @@ type EnvClient interface {
 	Reset(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
 	Close(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
 	GetReward(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Reward, error)
+	GetEnvObservation(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Observation, error)
+	GetEnvInfo(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Info, error)
 }
 
 type envClient struct {
@@ -279,6 +382,24 @@ func (c *envClient) GetReward(ctx context.Context, in *Empty, opts ...grpc.CallO
 	return out, nil
 }
 
+func (c *envClient) GetEnvObservation(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Observation, error) {
+	out := new(Observation)
+	err := c.cc.Invoke(ctx, "/proto.Env/GetEnvObservation", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *envClient) GetEnvInfo(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Info, error) {
+	out := new(Info)
+	err := c.cc.Invoke(ctx, "/proto.Env/GetEnvInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // EnvServer is the server API for Env service.
 type EnvServer interface {
 	Init(context.Context, *Request) (*Response, error)
@@ -286,6 +407,8 @@ type EnvServer interface {
 	Reset(context.Context, *Request) (*Response, error)
 	Close(context.Context, *Request) (*Response, error)
 	GetReward(context.Context, *Empty) (*Reward, error)
+	GetEnvObservation(context.Context, *Request) (*Observation, error)
+	GetEnvInfo(context.Context, *Request) (*Info, error)
 }
 
 // UnimplementedEnvServer can be embedded to have forward compatible implementations.
@@ -306,6 +429,12 @@ func (*UnimplementedEnvServer) Close(ctx context.Context, req *Request) (*Respon
 }
 func (*UnimplementedEnvServer) GetReward(ctx context.Context, req *Empty) (*Reward, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetReward not implemented")
+}
+func (*UnimplementedEnvServer) GetEnvObservation(ctx context.Context, req *Request) (*Observation, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEnvObservation not implemented")
+}
+func (*UnimplementedEnvServer) GetEnvInfo(ctx context.Context, req *Request) (*Info, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEnvInfo not implemented")
 }
 
 func RegisterEnvServer(s *grpc.Server, srv EnvServer) {
@@ -402,6 +531,42 @@ func _Env_GetReward_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Env_GetEnvObservation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Request)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EnvServer).GetEnvObservation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Env/GetEnvObservation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EnvServer).GetEnvObservation(ctx, req.(*Request))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Env_GetEnvInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Request)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EnvServer).GetEnvInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Env/GetEnvInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EnvServer).GetEnvInfo(ctx, req.(*Request))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Env_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.Env",
 	HandlerType: (*EnvServer)(nil),
@@ -425,6 +590,14 @@ var _Env_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetReward",
 			Handler:    _Env_GetReward_Handler,
+		},
+		{
+			MethodName: "GetEnvObservation",
+			Handler:    _Env_GetEnvObservation_Handler,
+		},
+		{
+			MethodName: "GetEnvInfo",
+			Handler:    _Env_GetEnvInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

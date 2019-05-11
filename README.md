@@ -286,6 +286,24 @@ agent.action
       }
     }
 
+env.launch
+~~~~~~~~~~
+
+.. code::
+		  
+    {
+      "method": "v0.env.launch",
+      "headers": {
+        "sent_at": 1479493678.1937322617,
+        "message_id": 15
+      },
+      "body": {
+        "env_id": "sibeshkar/wob-v0"
+        "fps" : "16"
+      }
+    }
+
+
 env.reset
 ~~~~~~~~~
 
@@ -301,6 +319,10 @@ env.reset
         "env_id": "flashgames.DuskDrive-v0"
       }
     }
+
+env.launch
+~~~~~~~~~~
+
 
 control.ping
 ~~~~~~~~~~~~

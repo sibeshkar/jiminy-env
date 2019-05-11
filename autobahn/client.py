@@ -35,6 +35,9 @@ class RewarderProtocol(WebSocketClientProtocol):
 
         payload_reset = {
             'method' : 'v0.env.reset',
+            'headers' : {
+                'parent_message_id' : '12'
+            },
             'body' : {
                 'env_id' : 'sibeshkar/wob-v0/ClickShades'
             }

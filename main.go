@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -43,9 +44,15 @@ type Headers struct {
 }
 
 type Body struct {
-	EnvId  string  `json:"env_id"`
-	Reward float32 `json:"reward"`
-	Done   bool    `json:"done"`
+	EnvId     string  `json:"env_id"`
+	EnvStatus string  `json:"env_status"`
+	Fps       float32 `json:"fps"`
+	Reward    float32 `json:"reward"`
+	Done      bool    `json:"done"`
+	Obs       string  `json:"obs"`
+	ObsType   string  `json:"obs_type"`
+	Info      string  `json:"info"`
+	InfoType  string  `json:"info_type"`
 }
 
 type Message struct {
@@ -123,6 +130,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("Env is resetting to task")
 		case "running":
 			agent_conn.SendEnvReward()
+			//agent_conn.SendEnvObservation()
+			DummyObs()
 			fmt.Println("Environment is running")
 		}
 
@@ -207,6 +216,7 @@ func (c *AgentConn) OnMessage() error {
 func (c *AgentConn) Launch(m *Message) {
 	fmt.Printf("launch message received: %s\n", m.Body.EnvId)
 	c.envState.SetEnvStatus("launching")
+	c.envState.SetFps(m.Body.Fps)
 
 	result, err := env.Launch(m.Body.EnvId)
 	if err != nil {
@@ -214,6 +224,15 @@ func (c *AgentConn) Launch(m *Message) {
 	}
 	c.envState.SetEnvId(m.Body.EnvId)
 	fmt.Println("from binary received: ", result)
+}
+
+func (c *AgentConn) SendLaunchReply(parent_message_id string, err error) {
+
+	//include this inside everytime
+	// func (c *AgentConn) SendLaunchError() {
+
+	// }
+
 }
 
 func (c *AgentConn) Reset(m *Message) {
@@ -227,6 +246,15 @@ func (c *AgentConn) Reset(m *Message) {
 	c.envState.SetEnvStatus("running")
 	c.envState.SetEnvId(m.Body.EnvId)
 	fmt.Println("from binary received: ", result)
+}
+
+func (c *AgentConn) SendResetReply(parent_message_id string, err error) {
+
+	// func (c *AgentConn) SendResetError() {
+	//Include this inside.
+
+	// }
+
 }
 
 func (c *AgentConn) Close(m *Message) {
@@ -245,16 +273,6 @@ func (c *AgentConn) SendMessage(m Message) error {
 		log.Println("write:", err)
 	}
 	return err
-}
-
-//Required function of AgentConn
-//
-func (c *AgentConn) SendEnvText(text string, episode_id float32) {
-
-}
-
-func (c *AgentConn) SendEnvObservation(observation []byte, episode_id float32) {
-
 }
 
 func (c *AgentConn) SendEnvReward() {
@@ -284,11 +302,135 @@ func (c *AgentConn) SendEnvReward() {
 
 }
 
-func (c *AgentConn) SendEnvDescribe(reward float32, done bool, info []byte, episode_id float32) {
+//Required function of AgentConn
+//
+// func (c *AgentConn) SendEnvText(text string) {
+
+// }
+//Protobuf method GetEnvObservation (sent once every 1/fps)
+func (c *AgentConn) SendEnvObservation() {
+
+	t, obs, err := env.GetEnvObservation(c.envState.EnvId)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	method := "v0.env.observation"
+
+	headers := Headers{
+		Sent_at:   time.Now().Unix(),
+		EpisodeId: c.envState.GetEpisodeId(),
+	}
+
+	body := Body{
+		Obs:     base64.StdEncoding.EncodeToString(obs),
+		ObsType: t,
+	}
+
+	m := Message{
+		Method:  method,
+		Headers: headers,
+		Body:    body,
+	}
+
+	c.SendMessage(m)
 
 }
 
-func (c *AgentConn) SendReplyError() {
+func (c *AgentConn) SendEnvInfo() {
+
+	t, info, err := env.GetEnvInfo(c.envState.EnvId)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	method := "v0.env.info"
+
+	headers := Headers{
+		Sent_at:   time.Now().Unix(),
+		EpisodeId: c.envState.GetEpisodeId(),
+	}
+
+	body := Body{
+		Info:     base64.StdEncoding.EncodeToString(info),
+		InfoType: t,
+	}
+
+	m := Message{
+		Method:  method,
+		Headers: headers,
+		Body:    body,
+	}
+
+	c.SendMessage(m)
+
+}
+
+func (c *AgentConn) SendEnvDescribe() {
+
+	method := "v0.env.describe"
+
+	headers := Headers{
+		Sent_at:   time.Now().Unix(),
+		EpisodeId: c.envState.GetEpisodeId(),
+	}
+
+	body := Body{
+		EnvId:     c.envState.GetEnvId(),
+		EnvStatus: c.envState.GetEnvStatus(),
+		Fps:       c.envState.GetFps(),
+	}
+
+	m := Message{
+		Method:  method,
+		Headers: headers,
+		Body:    body,
+	}
+
+	c.SendMessage(m)
+
+}
+
+func DummyObs() {
+	t, obs, err := env.GetEnvObservation("test")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// img, _, err := image.Decode(bytes.NewReader(obs))
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	// //save the imgByte to file
+	// out, err := os.Create("./QRImg.png")
+
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	os.Exit(1)
+	// }
+
+	// err = png.Encode(out, img)
+
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	os.Exit(1)
+	// }
+	obsString := base64.StdEncoding.EncodeToString(obs)
+	fmt.Println("The type is ", t)
+	fmt.Println("The obs is ", obsString)
+}
+
+func DummyInfo() {
+
+	t, info, err := env.GetEnvInfo("test")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	infoString := base64.StdEncoding.EncodeToString(info)
+	fmt.Println("The type is ", t)
+	fmt.Println("The info is ", infoString)
 
 }
 

@@ -61,6 +61,28 @@ func (m *GRPCClient) GetReward() (float32, bool, error) {
 	return resp.Reward, resp.Done, nil
 }
 
+func (m *GRPCClient) GetEnvObservation(key string) (string, []byte, error) {
+	resp, err := m.client.GetEnvObservation(context.Background(), &proto.Request{
+		EnvId: key,
+	})
+	if err != nil {
+		return "none", []byte(""), err
+	}
+
+	return resp.Type, resp.Obs, nil
+}
+
+func (m *GRPCClient) GetEnvInfo(key string) (string, []byte, error) {
+	resp, err := m.client.GetEnvInfo(context.Background(), &proto.Request{
+		EnvId: key,
+	})
+	if err != nil {
+		return "none", []byte(""), err
+	}
+
+	return resp.Type, resp.Info, nil
+}
+
 // Here is the gRPC server that GRPCClient talks to.
 type GRPCServer struct {
 	// This is the real implementation
@@ -99,6 +121,20 @@ func (m *GRPCServer) Close(
 func (m *GRPCServer) GetReward(
 	ctx context.Context,
 	req *proto.Empty) (*proto.Reward, error) {
-	v, d, err := m.Impl.GetReward()
-	return &proto.Reward{Reward: v, Done: d}, err
+	r, d, err := m.Impl.GetReward()
+	return &proto.Reward{Reward: r, Done: d}, err
+}
+
+func (m *GRPCServer) GetEnvObservation(
+	ctx context.Context,
+	req *proto.Request) (*proto.Observation, error) {
+	t, obs, err := m.Impl.GetEnvObservation(req.EnvId)
+	return &proto.Observation{Type: t, Obs: obs}, err
+}
+
+func (m *GRPCServer) GetEnvInfo(
+	ctx context.Context,
+	req *proto.Request) (*proto.Info, error) {
+	t, info, err := m.Impl.GetEnvInfo(req.EnvId)
+	return &proto.Info{Type: t, Info: info}, err
 }
