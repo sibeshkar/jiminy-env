@@ -1,0 +1,9 @@
+{   
+    "Link" : "sibeshkar/wob-v0/", 
+    "Tasks": ["TicTacToe","BookFlight"],
+    "BinaryFile":"wob-v0",
+    "IncludeDirs" : [
+        "static",
+        "vendor"
+    ]
+}
