@@ -9,6 +9,7 @@ all:build
 build:
 	$(GOBUILD) -o $(ENV_PLUGIN_BINARY_NAME)-$(TAG) -v
 install:
+	$(GOBUILD) -o $(ENV_PLUGIN_BINARY_NAME)-$(TAG) -v
 	jiminy install .
 
 

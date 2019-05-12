@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/sibeshkar/jiminy-env/shared"
 	"github.com/urfave/cli"
@@ -49,10 +49,11 @@ type Body struct {
 	Fps       float32 `json:"fps"`
 	Reward    float32 `json:"reward"`
 	Done      bool    `json:"done"`
-	Obs       string  `json:"obs"`
-	ObsType   string  `json:"obs_type"`
+	Obs       string  `json:"observation"`
+	ObsType   string  `json:"observation_type"`
 	Info      string  `json:"info"`
 	InfoType  string  `json:"info_type"`
+	Message   string  `json:"message"`
 }
 
 type Message struct {
@@ -121,18 +122,29 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	go agent_conn.OnMessage()
 
+	var lastdone bool
+
 	for {
 
 		switch agent_conn.envState.EnvStatus {
 		case "launching":
 			fmt.Println("Env is still launching")
+			time.Sleep(100 * time.Microsecond)
 		case "resetting":
 			fmt.Println("Env is resetting to task")
+			time.Sleep(100 * time.Microsecond)
 		case "running":
-			agent_conn.SendEnvReward()
-			//agent_conn.SendEnvObservation()
-			DummyObs()
+			reward, done, _ := env.GetReward()
+
+			agent_conn.SendEnvReward(reward, done)
+			agent_conn.SendEnvObservation()
+			if done && lastdone != true {
+				go agent_conn.Reset()
+				fmt.Println("Environment is resetting to task again")
+				agent_conn.envState.SetEpisodeId(agent_conn.envState.GetEpisodeId() + 1)
+			}
 			fmt.Println("Environment is running")
+			lastdone = done
 		}
 
 		time.Sleep(time.Duration(1000/agent_conn.envState.Fps) * time.Millisecond)
@@ -141,7 +153,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func pluginRPC(pluginObj *shared.PluginConfig) shared.Env {
-	log.SetOutput(ioutil.Discard)
+	//log.SetOutput(ioutil.Discard)
+
+	logger := hclog.New(&hclog.LoggerOptions{
+		Output: hclog.DefaultOutput,
+		Name:   "plugin",
+	})
 
 	// We're a host. Start by launching the plugin process.
 	client := plugin.NewClient(&plugin.ClientConfig{
@@ -150,6 +167,7 @@ func pluginRPC(pluginObj *shared.PluginConfig) shared.Env {
 		Cmd:             exec.Command("sh", "-c", pluginObj.BinaryFile),
 		AllowedProtocols: []plugin.Protocol{
 			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
+		Logger: logger,
 	})
 	// defer client.Kill()
 
@@ -180,7 +198,7 @@ func NewAgentConn(w http.ResponseWriter, r *http.Request) (AgentConn, error) {
 		log.Println(err)
 	}
 
-	envState, err := NewEnvState("wob.mini.TicTacToe", "resetting", 1, 20)
+	envState, err := NewEnvState("", "launching", 1, 20)
 	agent_conn := AgentConn{
 		ws:       conn,
 		envState: envState,
@@ -202,9 +220,9 @@ func (c *AgentConn) OnMessage() error {
 			return err
 		}
 		if m.Method == "v0.env.launch" {
-			c.Launch(&m)
+			c.InitLaunch(&m)
 		} else if m.Method == "v0.env.reset" {
-			c.Reset(&m)
+			c.InitReset(&m)
 		} else if m.Method == "v0.env.close" {
 			c.Close(&m)
 		}
@@ -213,10 +231,9 @@ func (c *AgentConn) OnMessage() error {
 
 }
 
-func (c *AgentConn) Launch(m *Message) {
+func (c *AgentConn) InitLaunch(m *Message) {
 	fmt.Printf("launch message received: %s\n", m.Body.EnvId)
 	c.envState.SetEnvStatus("launching")
-	c.envState.SetFps(m.Body.Fps)
 
 	result, err := env.Launch(m.Body.EnvId)
 	if err != nil {
@@ -235,25 +252,81 @@ func (c *AgentConn) SendLaunchReply(parent_message_id string, err error) {
 
 }
 
-func (c *AgentConn) Reset(m *Message) {
+func (c *AgentConn) InitReset(m *Message) {
 	fmt.Println("reset message received: %s\n", m.Body.EnvId)
 	c.envState.SetEnvStatus("resetting")
 
 	result, err := env.Reset(m.Body.EnvId)
 	if err != nil {
 		fmt.Println("error during reset: \n", err)
+	} else {
+		c.envState.SetEnvStatus("running")
+		c.envState.SetEnvId(m.Body.EnvId)
+		fmt.Println("from binary received: ", result)
+
 	}
-	c.envState.SetEnvStatus("running")
-	c.envState.SetEnvId(m.Body.EnvId)
-	fmt.Println("from binary received: ", result)
+
+	c.SendResetReply(m.Headers.MessageId, err)
 }
 
 func (c *AgentConn) SendResetReply(parent_message_id string, err error) {
 
-	// func (c *AgentConn) SendResetError() {
-	//Include this inside.
+	if err != nil {
+		method := "v0.reply.error"
 
-	// }
+		headers := Headers{
+			Sent_at:         time.Now().Unix(),
+			EpisodeId:       c.envState.GetEpisodeId(),
+			ParentMessageId: parent_message_id,
+		}
+
+		body := Body{
+			Message: err.Error(),
+		}
+
+		m := Message{
+			Method:  method,
+			Headers: headers,
+			Body:    body,
+		}
+
+		c.SendMessage(m)
+
+	} else {
+
+		method := "v0.reply.env.reset"
+
+		headers := Headers{
+			Sent_at:         time.Now().Unix(),
+			EpisodeId:       c.envState.GetEpisodeId(),
+			ParentMessageId: parent_message_id,
+		}
+
+		body := Body{}
+
+		m := Message{
+			Method:  method,
+			Headers: headers,
+			Body:    body,
+		}
+
+		c.SendMessage(m)
+
+	}
+
+}
+
+func (c *AgentConn) Reset() {
+
+	c.envState.SetEnvStatus("resetting")
+	c.SendEnvDescribe()
+
+	_, err := env.Reset(c.envState.GetEnvId())
+	if err != nil {
+		fmt.Println("error during reset: \n", err)
+	}
+
+	c.envState.SetEnvStatus("running")
 
 }
 
@@ -275,9 +348,7 @@ func (c *AgentConn) SendMessage(m Message) error {
 	return err
 }
 
-func (c *AgentConn) SendEnvReward() {
-
-	reward, done, _ := env.GetReward()
+func (c *AgentConn) SendEnvReward(reward float32, done bool) {
 
 	method := "v0.env.reward"
 
@@ -314,6 +385,12 @@ func (c *AgentConn) SendEnvObservation() {
 	if err != nil {
 		fmt.Println(err)
 	}
+	var observation string
+	if t == "image" {
+		observation = base64.StdEncoding.EncodeToString(obs)
+	} else {
+		observation = string(obs)
+	}
 
 	method := "v0.env.observation"
 
@@ -323,7 +400,7 @@ func (c *AgentConn) SendEnvObservation() {
 	}
 
 	body := Body{
-		Obs:     base64.StdEncoding.EncodeToString(obs),
+		Obs:     observation,
 		ObsType: t,
 	}
 
@@ -416,9 +493,15 @@ func DummyObs() {
 	// 	fmt.Println(err)
 	// 	os.Exit(1)
 	// }
-	obsString := base64.StdEncoding.EncodeToString(obs)
+	//obsString := base64.StdEncoding.EncodeToString(obs)
+	var observation string
+	if t == "image" {
+		observation = base64.StdEncoding.EncodeToString(obs)
+	} else {
+		observation = string(obs)
+	}
 	fmt.Println("The type is ", t)
-	fmt.Println("The obs is ", obsString)
+	fmt.Println("The obs is ", observation)
 }
 
 func DummyInfo() {

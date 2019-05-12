@@ -3,10 +3,63 @@ import time
 from autobahn.twisted.websocket import WebSocketClientProtocol, \
     WebSocketClientFactory
 
+from twisted.internet import defer
+
+from jiminy.rewarder import reward_buffer
+
 class RewarderProtocol(WebSocketClientProtocol):
+
+    def __init__(self):
+        super(RewarderProtocol, self).__init__()
+        self._closed = False
+        self._close_message = None
+
+        self._connected = False
+        self._requests = {}
+
+        self._reset = None
+        self._launch = None
+        self._initial_reset = False
+        self._initial_launch = False
+        self.label = "random-connection-1234"
+
+        self._connection_result = defer.Deferred()
+        
+    def send_reset(self, env_id, seed, fps, episode_id):
+        self._initial_reset = True
+        self._reset = {
+            'env_id': env_id,
+            #'fps': fps,
+            'episode_id': episode_id,
+        }
+
+        print("resetting")
+
+        return self.send('v0.env.reset', {
+            #'seed': seed,
+            'env_id': env_id,
+            #'fps': fps,
+        }, {'episode_id': episode_id}, expect_reply=False)
+
+    def send_launch(self, env_id, seed, fps, episode_id):
+        self._initial_launch = True
+        self._launch = {
+            'env_id': env_id,
+            #'fps': fps,
+            'episode_id': episode_id,
+        }
+
+
+        return self.send('v0.env.launch', {
+            #'seed': seed,
+            'env_id': env_id,
+            #'fps': fps,
+        }, {'episode_id': episode_id}, expect_reply=False)
 
     def onConnect(self, response):
         print("Server connected: {0}".format(response.peer))
+        self._message_id = 0
+        self.reward_buffer = reward_buffer.RewardBuffer(self.label)
 
     def onConnecting(self, transport_details):
         print("Connecting; transport details: {}".format(transport_details))
@@ -14,7 +67,9 @@ class RewarderProtocol(WebSocketClientProtocol):
 
     def onOpen(self):
         print("WebSocket connection open.")
-        self.send()
+        self.send_launch("sibeshkar/wob-v0", None, None, 1 )
+        print("launched")
+        self.send_reset("sibeshkar/wob-v0/TicTacToe", None, None, 1)
 
     def onMessage(self, payload, isBinary):
         assert not isBinary
@@ -24,14 +79,34 @@ class RewarderProtocol(WebSocketClientProtocol):
         self.recv(context, payload)
         print("Text message received: {0}".format(payload['method']))
 
-    def _send(self):
-        payload_launch = {
-            'method' : 'v0.env.launch',
-            'body' : {
-                'env_id' : 'sibeshkar/wob-v0'
-            }
+    def _send(self, method, body, headers=None, expect_reply=False):
+        if headers is None:
+            headers = {}
+
+        id = self._message_id
+
+        self._message_id += 1
+        new_headers = {
+            'message_id': id,
+            'sent_at': time.time(),
         }
-        self.sendMessage(ujson.dumps(payload_launch).encode('utf-8'), False)
+        new_headers.update(headers)
+
+        payload = {
+            'method': method,
+            'body': body,
+
+        }
+
+        print(payload)
+
+        # payload= {
+        #     'method' : 'v0.env.launch',
+        #     'body' : {
+        #         'env_id' : 'sibeshkar/wob-v0'
+        #     }
+        # }
+        # self.sendMessage(ujson.dumps(payload_launch).encode('utf-8'), False)
 
         payload_reset = {
             'method' : 'v0.env.reset',
@@ -43,11 +118,18 @@ class RewarderProtocol(WebSocketClientProtocol):
             }
         }
 
+        self.sendMessage(ujson.dumps(payload).encode('utf-8'), False)
         self.sendMessage(ujson.dumps(payload_reset).encode('utf-8'), False)
         #self.send()
+        # if expect_reply:
+        #     d = defer.Deferred()
+        #     self._requests[id] = (payload, d)
+        #     return d
+        # else:
+        #     return None
     
-    def send(self):
-        self.factory.reactor.callFromThread(self._send)
+    def send(self, method, body, headers=None, expect_reply=False):
+         self.factory.reactor.callFromThread(self._send, method, body, headers=None, expect_reply=False)
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {0}".format(reason))
@@ -56,7 +138,8 @@ class RewarderProtocol(WebSocketClientProtocol):
         pass
 
     def _finish_reset(self, episode_id):
-        pass
+        print('[%s] Running finish_reset: %s', self.label, episode_id)
+        #self.reward_buffer.reset(episode_id)
 
     def waitForWebsocketConnection(self):
         pass
@@ -72,7 +155,39 @@ class RewarderProtocol(WebSocketClientProtocol):
         remote_time = headers['sent_at']
         local_time = context['start']
         print("Method: {}, Body: {}, Headers: {}, Remote time: {}".format(method, body, headers, remote_time))
-        pass
+
+        if method == 'v0.env.reward':
+            episode_id = headers['episode_id']
+            reward = body['reward']
+            done = body['done']
+            info = body['info']
+            print('[%s] Received %s: reward=%s done=%s info=%s episode_id=%s', self.label, method, reward, done, info, episode_id)
+            #pyprofile.incr('rewarder_client.reward', reward)
+            # if done:
+            #     pyprofile.incr('rewarder_client.done')
+            #self.reward_buffer.push(episode_id, reward, done, info)
+        elif method == 'v0.env.observation':
+            episode_id = headers['episode_id']
+            jsonable = body['observation']
+            print('[%s] Received %s: observation=%s episode_id=%s', self.label, method, jsonable, episode_id)
+            #self.reward_buffer.set_observation(episode_id=episode_id, observation=jsonable)
+        elif method == 'v0.env.describe':
+            episode_id = headers['episode_id']
+            env_id = body['env_id']
+            env_state = body['env_status'] ##note this change, original has ['env_state']
+            fps = body['fps']
+            print('[%s] Received %s: env_id=%s env_state=%s episode_id=%s',
+                              self.label, method, env_id, env_state, episode_id)
+            #self.reward_buffer.set_env_info(env_state, env_id=env_id, episode_id=episode_id, fps=fps)
+        elif method == 'v0.reply.env.reset':
+            episode_id = headers['episode_id']
+            self._finish_reset(episode_id)
+        elif method in ['v0.reply.error', 'v0.reply.control.ping']:
+            assert headers.get('parent_message_id') is not None
+        else:
+            print('Unrecognized websocket method: method=%s body=%s headers=%s (consider adding to rewarder_state.py)', method, body, headers)
+            return
+
     
     def _make_context(self):
         return {'start': time.time()}

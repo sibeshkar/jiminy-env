@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
@@ -90,19 +89,27 @@ func (Env) Reset(key string) (string, error) {
 
 	var envString []string = strings.Split(key, "/")
 
-	if err := wd.Get(taskList[envString[len(envString)-1]]); err != nil {
-		panic(err)
-	}
-	var reply interface{}
-	var err error
+	current, _ := wd.CurrentURL()
 
-	script := "return document.readyState"
-	reply, err = wd.ExecuteScript(script, nil)
-	if err != nil {
-		panic(err)
+	if current == taskList[envString[len(envString)-1]] {
+		return "env is already reset", nil
+	} else {
+		if err := wd.Get(taskList[envString[len(envString)-1]]); err != nil {
+			panic(err)
+		}
+		var reply interface{}
+		var err error
+
+		script := "return document.readyState"
+		reply, err = wd.ExecuteScript(script, nil)
+		if err != nil {
+			panic(err)
+		}
+
+		return "env is reset now:" + reply.(string), err
+
 	}
 
-	return "env is reset:" + reply.(string), err
 }
 
 //Closing and wrapping up environment when over.
@@ -134,7 +141,9 @@ func (Env) GetEnvObservation(key string) (string, []byte, error) {
 	// fmt.Println(source)
 	source, err := wd.PageSource()
 
-	obs, err := base64.StdEncoding.DecodeString(source)
+	//obs, err := base64.StdEncoding.DecodeString(source)
+
+	obs := []byte(source)
 
 	return "dom", obs, err
 
@@ -146,7 +155,7 @@ func (Env) GetEnvInfo(key string) (string, []byte, error) {
 
 	instruction, err := safe_execute("return document.querySelector('#query').textContent", nil)
 
-	info, err := base64.StdEncoding.DecodeString(instruction.(string))
+	info := []byte(instruction.(string))
 
 	return "instruction", info, err
 
