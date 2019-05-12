@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -13,6 +12,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/sibeshkar/jiminy-env/shared"
+	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
 	"github.com/gorilla/websocket"
@@ -72,7 +72,7 @@ func main() {
 			Aliases: []string{"a"},
 			Usage:   "Run an installed environment. e.g. sibeshkar/wob-v0",
 			Action: func(c *cli.Context) error {
-				fmt.Println("added task: ", c.Args().First())
+				log.Info("added task: ", c.Args().First())
 				Run(c.Args().First())
 				return nil
 			},
@@ -89,6 +89,18 @@ func main() {
 				} else {
 					shared.Install(c.Args().First())
 				}
+
+				return nil
+			},
+		},
+		{
+			Name:    "zip",
+			Aliases: []string{"c"},
+			Usage:   "Zip plugin folder according to config.json to create zip archive inside",
+			Action: func(c *cli.Context) error {
+				fmt.Println("the directory is ", c.Args().First())
+
+				shared.CreateArchive(c.Args().First())
 
 				return nil
 			},
@@ -122,28 +134,34 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	go agent_conn.OnMessage()
 
-	var lastdone bool
+	var lastdone bool = true
 
 	for {
 
 		switch agent_conn.envState.EnvStatus {
 		case "launching":
-			fmt.Println("Env is still launching")
+			log.Info("Env is still launching")
 			time.Sleep(100 * time.Microsecond)
 		case "resetting":
-			fmt.Println("Env is resetting to task")
+			log.Info("Env is resetting to task")
 			time.Sleep(100 * time.Microsecond)
 		case "running":
 			reward, done, _ := env.GetReward()
-
 			agent_conn.SendEnvReward(reward, done)
 			agent_conn.SendEnvObservation()
-			if done && lastdone != true {
-				go agent_conn.Reset()
-				fmt.Println("Environment is resetting to task again")
-				agent_conn.envState.SetEpisodeId(agent_conn.envState.GetEpisodeId() + 1)
+			if done != lastdone {
+				if done {
+					go agent_conn.Reset()
+					log.Info("Environment is resetting to task again")
+					agent_conn.envState.SetEpisodeId(agent_conn.envState.GetEpisodeId() + 1)
+					log.Info("Episode ID is", agent_conn.envState.GetEpisodeId())
+
+				} else {
+					log.Info("Environment is running")
+				}
+
 			}
-			fmt.Println("Environment is running")
+
 			lastdone = done
 		}
 

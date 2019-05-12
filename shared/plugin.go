@@ -182,3 +182,62 @@ func InstallFromArchive(zipfile string) {
 func InstallFromLink(link string) {
 	return
 }
+
+//Install plugin from local folder (make sure config.json is present)
+func CreateArchive(filepath string) {
+	var t PluginConfig
+
+	fileDir := utils.AbsPathify(filepath)
+
+	err := os.Chdir(fileDir)
+	if err != nil {
+		panic(err)
+	}
+
+	viper.SetConfigName("config")
+	viper.AddConfigPath(fileDir)
+	viper.SetConfigType("json")
+
+	fmt.Println(fileDir)
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalf("Error reading config file, %s", err)
+	}
+
+	err = viper.Unmarshal(&t)
+	if err != nil {
+		log.Fatalf("unable to decode into struct, %v", err)
+	}
+
+	z := archiver.Zip{
+		CompressionLevel:       flate.DefaultCompression,
+		MkdirAll:               true,
+		SelectiveCompression:   true,
+		ContinueOnError:        true,
+		OverwriteExisting:      true,
+		ImplicitTopLevelFolder: false,
+	}
+
+	os.Remove(t.BinaryFile + ".zip")
+
+	// List of Files to Zip
+	err = z.Archive(append(t.IncludeDirs, t.BinaryFile, "config.json"), t.BinaryFile+".zip")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// m := CreatePluginConfig(t.Link)
+	// m.Tasks = t.Tasks
+	// m.IncludeDirs = t.IncludeDirs
+
+	// if exist, _ := utils.Exists(m.Directory); exist != true {
+	// 	os.MkdirAll(m.Directory, os.ModePerm)
+	// }
+
+	// file, _ := json.MarshalIndent(m, "", " ")
+
+	// _ = ioutil.WriteFile(m.Directory+"config.json", file, 0644)
+
+	// err = archiver.Unarchive(t.BinaryFile+".zip", m.Directory)
+	//os.Remove(t.BinaryFile)
+
+}
