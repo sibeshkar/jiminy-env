@@ -157,7 +157,8 @@ func pluginRPC(pluginObj *shared.PluginConfig) shared.Env {
 
 	logger := hclog.New(&hclog.LoggerOptions{
 		Output: hclog.DefaultOutput,
-		Name:   "plugin",
+		//Level:  hclog.Trace,
+		Name: "plugin",
 	})
 
 	// We're a host. Start by launching the plugin process.
