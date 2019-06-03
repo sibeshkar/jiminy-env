@@ -1,5 +1,7 @@
 # Go parameters
 GOCMD=go
+GOOS=linux
+GOARCH=amd64
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
@@ -13,7 +15,7 @@ VERSION=0.1.0
 
 all:build
 build:
-	$(GOBUILD) -o $(CONTROLLER_BINARY_NAME) -v
+	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(CONTROLLER_BINARY_NAME) -v
 
 proto:
 	protoc -I proto/ proto/env.proto --go_out=plugins=grpc:proto/
@@ -32,8 +34,8 @@ install:
 	$(GOBUILD) -o $(GOPATH)/bin/$(CONTROLLER_BINARY_NAME)
 
 docker:
-	$(GOBUILD) -o $(CONTROLLER_BINARY_NAME) -v
-	jiminy install plugin-go-grpc/
+	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(CONTROLLER_BINARY_NAME) -v
+	jiminy zip plugin-go-grpc/
 	docker build . -t sibeshkar/jiminy-env:$(VERSION) --force-rm
 
 docker-run:

@@ -37,7 +37,12 @@ func (Env) Init(key string) (string, error) {
 	var err error
 	if os.Getenv("DISPLAY") == "" {
 		os.Setenv("DISPLAY", ":0")
-		cmd := exec.Command("/bin/bash", "-c", shared.UserHomeDir()+"/"+".jiminy/plugins/"+key+"/vendor/boxware-tigervnc", "&")
+		cmd := exec.Command("/bin/bash", "-c", shared.UserHomeDir()+"/"+".jiminy/plugins/"+key+"/vendor/boxware-setpasswd", "&")
+		err = cmd.Start()
+		if err != nil {
+			log.Fatalf("cmd.Run() failed with %s\n", err)
+		}
+		cmd = exec.Command("/bin/bash", "-c", shared.UserHomeDir()+"/"+".jiminy/plugins/"+key+"/vendor/boxware-tigervnc", "&")
 		err = cmd.Start()
 		if err != nil {
 			log.Fatalf("cmd.Run() failed with %s\n", err)

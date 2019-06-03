@@ -30,7 +30,7 @@ exec sudo -u xvnc -H Xvnc ":$display" \
      -depth 24 \
      -DeferUpdate 5 \
      -AlwaysShared \
-     -SecurityTypes None\
+     -PasswordFile /home/xvnc/.vnc/passwd \
      -desktop "TigerVNC ($(hostname))" \
      -geometry 1024x768 \
      -rfbauth /home/xvnc/.vnc/passwd \

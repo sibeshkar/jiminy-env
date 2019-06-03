@@ -1,3 +1,4 @@
 .vscode
 ./jiminy
+./jiminy-osx
 ./plugin-go-grpc/wob-v0*

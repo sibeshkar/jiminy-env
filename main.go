@@ -21,7 +21,8 @@ import (
 var EnvPlugin shared.PluginConfig
 
 //jiminy run sibeshkar/wob-v0/TicTacToe
-//jiminy build .
+//jiminy install <folder>
+//jiminy zip <folder>
 //jiminy pull sibeshkar/wob-v0/TicTacToe
 //jiminy push sibeshkar/wob-v0/TicTacToe
 
@@ -147,8 +148,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(100 * time.Microsecond)
 		case "running":
 			reward, done, _ := env.GetReward()
-			agent_conn.SendEnvReward(reward, done)
-			agent_conn.SendEnvObservation()
+			if err := agent_conn.SendEnvReward(reward, done); err != nil {
+				log.Error(err)
+			}
+			if err := agent_conn.SendEnvObservation(); err != nil {
+				log.Error(err)
+			}
+
 			if done != lastdone {
 				if done {
 					go agent_conn.Reset()
@@ -288,7 +294,7 @@ func (c *AgentConn) InitReset(m *Message) {
 	c.SendResetReply(m.Headers.MessageId, err)
 }
 
-func (c *AgentConn) SendResetReply(parent_message_id string, err error) {
+func (c *AgentConn) SendResetReply(parent_message_id string, err error) error {
 
 	if err != nil {
 		method := "v0.reply.error"
@@ -309,7 +315,8 @@ func (c *AgentConn) SendResetReply(parent_message_id string, err error) {
 			Body:    body,
 		}
 
-		c.SendMessage(m)
+		err = c.SendMessage(m)
+		return err
 
 	} else {
 
@@ -329,7 +336,8 @@ func (c *AgentConn) SendResetReply(parent_message_id string, err error) {
 			Body:    body,
 		}
 
-		c.SendMessage(m)
+		err = c.SendMessage(m)
+		return err
 
 	}
 
@@ -367,7 +375,7 @@ func (c *AgentConn) SendMessage(m Message) error {
 	return err
 }
 
-func (c *AgentConn) SendEnvReward(reward float32, done bool) {
+func (c *AgentConn) SendEnvReward(reward float32, done bool) error {
 
 	method := "v0.env.reward"
 
@@ -388,8 +396,8 @@ func (c *AgentConn) SendEnvReward(reward float32, done bool) {
 		Body:    body,
 	}
 
-	c.SendMessage(m)
-
+	err := c.SendMessage(m)
+	return err
 }
 
 //Required function of AgentConn
@@ -398,7 +406,7 @@ func (c *AgentConn) SendEnvReward(reward float32, done bool) {
 
 // }
 //Protobuf method GetEnvObservation (sent once every 1/fps)
-func (c *AgentConn) SendEnvObservation() {
+func (c *AgentConn) SendEnvObservation() error {
 
 	t, obs, err := env.GetEnvObservation(c.envState.EnvId)
 	if err != nil {
@@ -429,11 +437,12 @@ func (c *AgentConn) SendEnvObservation() {
 		Body:    body,
 	}
 
-	c.SendMessage(m)
+	err = c.SendMessage(m)
+	return err
 
 }
 
-func (c *AgentConn) SendEnvInfo() {
+func (c *AgentConn) SendEnvInfo() error {
 
 	t, info, err := env.GetEnvInfo(c.envState.EnvId)
 	if err != nil {
@@ -458,11 +467,12 @@ func (c *AgentConn) SendEnvInfo() {
 		Body:    body,
 	}
 
-	c.SendMessage(m)
+	err = c.SendMessage(m)
+	return err
 
 }
 
-func (c *AgentConn) SendEnvDescribe() {
+func (c *AgentConn) SendEnvDescribe() error {
 
 	method := "v0.env.describe"
 
@@ -483,7 +493,8 @@ func (c *AgentConn) SendEnvDescribe() {
 		Body:    body,
 	}
 
-	c.SendMessage(m)
+	err := c.SendMessage(m)
+	return err
 
 }
 
