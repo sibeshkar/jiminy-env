@@ -29,7 +29,7 @@ var (
 type Env struct{}
 
 //Init function contains all the ancilliary services, like static file servers, VNC servers, OBS websocket etc that are initialized
-//before the actual environment runtime (say a browser) starts.
+//before the actual environment runtime (say a browser) starts. Important : they are background services that need to run concurrently to the main runtime.
 func (Env) Init(key string) (string, error) {
 	//http://127.0.0.1:3000/miniwob/bisect-angle.html
 	//cmd := exec.Command("sh", "-c", shared.UserHomeDir()+"/"+".jiminy/plugins/"+key+"/vendor/boxware-tigervnc", "&")

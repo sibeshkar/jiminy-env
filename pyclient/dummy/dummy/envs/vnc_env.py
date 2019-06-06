@@ -6,7 +6,7 @@ import os
 
 from jiminy.gym.utils import reraise
 
-from jiminy import error, rewarder, spaces, utils, vectorized
+from jiminy import error, pyprofile, rewarder, spaces, twisty, vectorized, vncdriver
 from jiminy import remotes as remotes_module
 from jiminy.envs import diagnostics
 from jiminy.remotes import healthcheck
@@ -103,12 +103,13 @@ class DummyVNCEnv(vectorized.Env):
         self._remotes_manager = None
 
         self._probe_key = probe_key or 0xbeef1
-
+        self._seed_value = None
         self.rewarder_session = None
         self.vnc_session = None
         self.observation_space = spaces.VNCObservationSpace()
         self.action_space = spaces.VNCActionSpace()
         self._send_actions_over_websockets = False
+        self._skip_network_calibration = True
 
     def configure(self, remotes=None,
                    client_id=None,
@@ -119,6 +120,8 @@ class DummyVNCEnv(vectorized.Env):
                    observer=False,):
         
         runtime = 'world-of-bits'
+
+        twisty.start_once()
 
         logger.info("Configuring the environment...")
 
@@ -155,7 +158,7 @@ class DummyVNCEnv(vectorized.Env):
 
         self.remote_manager.allocate([str(i) for i in range(self.n)], initial=True)
 
-        self._reward_buffers = [rewarder.RewardBuffer('dummy:{}'.format(i)) for i in range(self.n)]
+        #self._reward_buffers = [rewarder.RewardBuffer('dummy:{}'.format(i)) for i in range(self.n)]
         self._started = True
         if allocate_sync:
             # Block until we've fulfilled n environments
@@ -175,6 +178,15 @@ class DummyVNCEnv(vectorized.Env):
         assert self.n == len(action_n), "Expected {} actions but received {}: {}".format(self.n, len(action_n), action_n)
 
         action_n, peek_d = self._compile_actions(action_n)
+
+        if self.rewarder_session:
+            reward_n, done_n, info_n, err_n = self._pop_rewarder_session(peek_d)
+        else:
+            reward_n = done_n = [None] * self.n
+            info_n = [{} for _ in range(self.n)]
+            err_n = [None] * self.n
+
+
         if self.vnc_session:
             # if self.diagnostics:
             #     self.diagnostics.clear_probes_when_done(done_n)
@@ -188,21 +200,38 @@ class DummyVNCEnv(vectorized.Env):
             visual_observation_n = [None] * self.n
             vnc_err_n = [None] * self.n
 
+        
+
         # observation_n = [{
         #     'vision': np.zeros((1024, 768, 3), dtype=np.uint8),
         #     'text': [],
         #     'action': action_n[i]
         # } for i in range(self.n)]
 
+        # reward_n = []
+        # done_n = []
+        # info_n = []
+        # for reward_buffer in self._reward_buffers:
+        #     reward, done, info = reward_buffer.pop()
+        #     reward_n.append(reward)
+        #     done_n.append(done)
+        #     info_n.append(info)
+        return visual_observation_n, reward_n, done_n, {'n': info_n}
+    
+    def _pop_rewarder_session(self, peek_d):
+        with pyprofile.push('vnc_env.VNCEnv.rewarder_session.pop'):
+            reward_d, done_d, info_d, err_d = self.rewarder_session.pop(peek_d=peek_d)
+
         reward_n = []
         done_n = []
         info_n = []
-        for reward_buffer in self._reward_buffers:
-            reward, done, info = reward_buffer.pop()
-            reward_n.append(reward)
-            done_n.append(done)
-            info_n.append(info)
-        return visual_observation_n, reward_n, done_n, {'n': info_n}
+        err_n = []
+        for name in self.connection_names:
+            reward_n.append(reward_d.get(name, 0))
+            done_n.append(done_d.get(name, False))
+            info_n.append(info_d.get(name, {'env_status.disconnected': True}))
+            err_n.append(err_d.get(name))
+        return reward_n, done_n, info_n, err_n
     
     def _step_vnc_session(self, compiled_d):
         if self._send_actions_over_websockets:
@@ -211,8 +240,8 @@ class DummyVNCEnv(vectorized.Env):
         else:
             vnc_action_d = compiled_d
 
-        #with pyprofile.push('vnc_env.VNCEnv.vnc_session.step'):
-        observation_d, info_d, err_d = self.vnc_session.step(vnc_action_d)
+        with pyprofile.push('vnc_env.VNCEnv.vnc_session.step'):
+            observation_d, info_d, err_d = self.vnc_session.step(vnc_action_d)
 
         observation_n = []
         info_n = []
@@ -260,6 +289,36 @@ class DummyVNCEnv(vectorized.Env):
 
             # TODO: name becomes index:pod_id
             # TODO: never log index, just log name
+        
+        if self.rewarder_session is not None:
+            if self.spec is not None:
+                env_id = self.spec.id
+            else:
+                env_id = None
+
+            if self._seed_value is not None:
+                # Once we use a seed, we clear it so we never
+                # accidentally reuse the seed. Seeds are an advanced
+                # feature and aren't supported by most envs in any
+                # case.
+                seed = self._seed_value[i]
+                self._seed_value[i] = None
+            else:
+                seed = None
+
+            assert rewarder_password, "Missing rewarder password: {}".format(rewarder_password)
+            network = self.rewarder_session.connect(
+                name=name, address=rewarder_address,
+                seed=seed, env_id=env_id,
+                fps=self.metadata['video.frames_per_second'],
+                password=rewarder_password,
+                label=self.connection_labels[i],
+                start_timeout=self.remote_manager.start_timeout,
+                observer=self._observer,
+                skip_network_calibration=self._skip_network_calibration
+            )
+        else:
+            network = None
     
     def _compile_actions(self, action_n):
         compiled_n = []
