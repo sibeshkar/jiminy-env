@@ -74,7 +74,11 @@ func main() {
 			Usage:   "Run an installed environment. e.g. sibeshkar/wob-v0",
 			Action: func(c *cli.Context) error {
 				log.Info("added task: ", c.Args().First())
-				Run(c.Args().First())
+				if len(c.Args().First()) != 0 {
+					RunPlugin(c.Args().First())
+				} else {
+					RunEmpty()
+				}
 				return nil
 			},
 		},
@@ -115,11 +119,19 @@ func main() {
 
 }
 
-func Run(pluginLink string) {
+func RunPlugin(pluginLink string) {
 
 	EnvPlugin = shared.CreatePluginConfig(pluginLink)
 	env = pluginRPC(&EnvPlugin)
 	go env.Init(pluginLink)
+	env.Launch(pluginLink)
+	http.HandleFunc("/", handler)
+	log.Fatal(http.ListenAndServe(":15900", nil))
+
+}
+
+func RunEmpty() {
+
 	http.HandleFunc("/", handler)
 	log.Fatal(http.ListenAndServe(":15900", nil))
 
