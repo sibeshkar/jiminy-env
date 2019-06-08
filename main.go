@@ -28,9 +28,14 @@ var EnvPlugin shared.PluginConfig
 var upgrader = websocket.Upgrader{}
 
 var env shared.Env
-var client *plugin.Client
+var client_conf ClientConfig
 
 var agent_conn AgentConn
+
+type ClientConfig struct {
+	client *plugin.Client
+	init   bool
+}
 
 type AgentConn struct {
 	ws       *websocket.Conn
@@ -125,7 +130,8 @@ func main() {
 func RunPlugin(pluginLink string) {
 
 	EnvPlugin = shared.CreatePluginConfig(pluginLink)
-	env, client = pluginRPC(&EnvPlugin)
+	env, client_conf.client = pluginRPC(&EnvPlugin)
+	client_conf.init = true
 	//TODO: client.Kill() before ending process, otherwise there are zombie plugin processes
 	go env.Init(pluginLink)
 	env.Launch(pluginLink)
@@ -263,9 +269,14 @@ func (c *AgentConn) OnMessage() error {
 			return err
 		}
 		if m.Method == "v0.env.launch" {
-			client.Kill()
+			if client_conf.init {
+				client_conf.client.Kill()
+				client_conf.init = false
+			}
+
 			EnvPlugin = shared.CreatePluginConfig(m.Body.EnvId)
-			env, client = pluginRPC(&EnvPlugin)
+			env, client_conf.client = pluginRPC(&EnvPlugin)
+			client_conf.init = true
 			c.InitLaunch(&m)
 		} else if m.Method == "v0.env.reset" {
 			c.InitReset(&m)
@@ -281,7 +292,6 @@ func (c *AgentConn) OnMessage() error {
 func (c *AgentConn) InitLaunch(m *Message) {
 	log.Info("launch message received: %s\n", m.Body.EnvId)
 	c.envState.SetEnvStatus("launching")
-
 	go env.Init(m.Body.EnvId)
 	result, err := env.Launch(m.Body.EnvId)
 	if err != nil {

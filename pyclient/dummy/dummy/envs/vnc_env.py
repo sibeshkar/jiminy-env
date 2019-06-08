@@ -205,8 +205,7 @@ class DummyVNCEnv(vectorized.Env):
         # observation_n = [{
         #     'vision': np.zeros((1024, 768, 3), dtype=np.uint8),
         #     'text': [],	//http://127.0.0.1:3000/miniwob/bisect-angle.html
-	//cmd := exec.Command("sh", "-c", shared.UserHomeDir()+"/"+".jiminy/plugins/"+key+"/vendor/boxware-tigervnc", "&")
-	//cmd.Start()
+
         #     'action': action_n[i]
         # } for i in range(self.n)]
 
