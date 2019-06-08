@@ -183,7 +183,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 					log.Info("Environment is resetting to task again")
 					agent_conn.envState.SetEpisodeId(agent_conn.envState.GetEpisodeId() + 1)
 					log.Info("Episode ID is", agent_conn.envState.GetEpisodeId())
-
 				} else {
 					log.Info("Environment is running")
 				}

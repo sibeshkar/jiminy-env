@@ -95,7 +95,6 @@ class RewarderProtocol(WebSocketClientProtocol):
         payload = {
             'method': method,
             'body': body,
-
         }
 
         print(payload)
@@ -103,7 +102,7 @@ class RewarderProtocol(WebSocketClientProtocol):
         payload= {
             'method' : 'v0.env.launch',
             'body' : {
-                'env_id' : 'sibeshkar/wob-v0'
+                'env_id' : 'sibeshkar/wob-v0',
             }
         }
         self.sendMessage(ujson.dumps(payload).encode('utf-8'), False)
