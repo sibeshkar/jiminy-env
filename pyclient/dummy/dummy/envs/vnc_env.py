@@ -80,7 +80,7 @@ class DummyVNCEnv(vectorized.Env):
     It also returns the actions in the observation, so you can test that action wrappers are producing the right answers
     For example, to test that YourActionWrapper converts example_input_action to example_output_action:
 
-    >>> dummy_env = gym.make('sibeshkar/wob-v0')
+    >>> dummy_env = gym.make('VNC.Core-v0')
     >>> e = YourActionWrapper(dummy_env)
     >>> e = jiminy.wrappers.Unvectorize(e)
     >>> observation, reward, done, info = e.step(example_input_action)
@@ -111,7 +111,7 @@ class DummyVNCEnv(vectorized.Env):
         self._send_actions_over_websockets = False
         self._skip_network_calibration = True
 
-    def configure(self, remotes=None,
+    def configure(self, envs=None, tasks=None,remotes=None,
                    client_id=None,
                    start_timeout=None, docker_image=None,
                    ignore_clock_skew=False, disable_action_probes=False,
@@ -204,7 +204,9 @@ class DummyVNCEnv(vectorized.Env):
 
         # observation_n = [{
         #     'vision': np.zeros((1024, 768, 3), dtype=np.uint8),
-        #     'text': [],
+        #     'text': [],	//http://127.0.0.1:3000/miniwob/bisect-angle.html
+	//cmd := exec.Command("sh", "-c", shared.UserHomeDir()+"/"+".jiminy/plugins/"+key+"/vendor/boxware-tigervnc", "&")
+	//cmd.Start()
         #     'action': action_n[i]
         # } for i in range(self.n)]
 

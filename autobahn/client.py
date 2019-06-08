@@ -100,26 +100,26 @@ class RewarderProtocol(WebSocketClientProtocol):
 
         print(payload)
 
-        # payload= {
-        #     'method' : 'v0.env.launch',
-        #     'body' : {
-        #         'env_id' : 'sibeshkar/wob-v0'
-        #     }
-        # }
-        # self.sendMessage(ujson.dumps(payload_launch).encode('utf-8'), False)
-
-        payload_reset = {
-            'method' : 'v0.env.reset',
-            'headers' : {
-                'parent_message_id' : '12'
-            },
+        payload= {
+            'method' : 'v0.env.launch',
             'body' : {
-                'env_id' : 'sibeshkar/wob-v0/ClickShades'
+                'env_id' : 'sibeshkar/wob-v0'
             }
         }
+        self.sendMessage(ujson.dumps(payload).encode('utf-8'), False)
+
+        # payload_reset = {
+        #     'method' : 'v0.env.reset',
+        #     'headers' : {
+        #         'parent_message_id' : '12'
+        #     },
+        #     'body' : {
+        #         'env_id' : 'sibeshkar/wob-v0/ClickShades'
+        #     }
+        # }
 
         self.sendMessage(ujson.dumps(payload).encode('utf-8'), False)
-        self.sendMessage(ujson.dumps(payload_reset).encode('utf-8'), False)
+        #self.sendMessage(ujson.dumps(payload_reset).encode('utf-8'), False)
         #self.send()
         # if expect_reply:
         #     d = defer.Deferred()
