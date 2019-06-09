@@ -103,7 +103,7 @@ class DummyVNCEnv(vectorized.Env):
         self._remotes_manager = None
 
         self._probe_key = probe_key or 0xbeef1
-        self._seed_value = None
+        self._seed_value = None #non-random int given temporarily
         self.rewarder_session = None
         self.vnc_session = None
         self.observation_space = spaces.VNCObservationSpace()
@@ -292,10 +292,12 @@ class DummyVNCEnv(vectorized.Env):
             # TODO: never log index, just log name
         
         if self.rewarder_session is not None:
-            if self.spec is not None:
-                env_id = self.spec.id
-            else:
-                env_id = None
+            # if self.spec is not None:
+            #     env_id = self.spec.id
+            # else:
+            #     env_id = None
+
+            env_id = 'sibeshkar/wob-v0/ClickShades' #temporarily created, not will pass env_id as argument finally
 
             if self._seed_value is not None:
                 # Once we use a seed, we clear it so we never
@@ -305,7 +307,7 @@ class DummyVNCEnv(vectorized.Env):
                 seed = self._seed_value[i]
                 self._seed_value[i] = None
             else:
-                seed = None
+                seed = 56
 
             assert rewarder_password, "Missing rewarder password: {}".format(rewarder_password)
             network = self.rewarder_session.connect(

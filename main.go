@@ -43,10 +43,10 @@ type AgentConn struct {
 }
 
 type Headers struct {
-	Sent_at         int64   `json:"sent_at"`
-	MessageId       string  `json:"message_id"`
-	ParentMessageId string  `json:"parent_message_id"`
-	EpisodeId       float32 `json:"episode_id"`
+	Sent_at         float64 `json:"sent_at"`
+	MessageId       int32   `json:"message_id"`
+	ParentMessageId int32   `json:"parent_message_id"`
+	EpisodeId       int64   `json:"episode_id"`
 }
 
 type Body struct {
@@ -60,6 +60,7 @@ type Body struct {
 	Info      string  `json:"info"`
 	InfoType  string  `json:"info_type"`
 	Message   string  `json:"message"`
+	Seed      int64   `json:"seed"`
 }
 
 type Message struct {
@@ -170,19 +171,21 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(100 * time.Microsecond)
 		case "running":
 			reward, done, _ := env.GetReward()
-			if err := agent_conn.SendEnvReward(reward, done); err != nil {
+			if err := agent_conn.SendEnvReward(reward, done, "{}"); err != nil {
 				log.Error(err)
 			}
-			if err := agent_conn.SendEnvObservation(); err != nil {
-				log.Error(err)
-			}
+
+			//Muted this temporarily
+			// if err := agent_conn.SendEnvObservation(); err != nil {
+			// 	log.Error(err)
+			// }
 
 			if done != lastdone {
 				if done {
 					go agent_conn.Reset()
 					log.Info("Environment is resetting to task again")
 					agent_conn.envState.SetEpisodeId(agent_conn.envState.GetEpisodeId() + 1)
-					log.Info("Episode ID is", agent_conn.envState.GetEpisodeId())
+					log.Info("Episode ID is ", agent_conn.envState.GetEpisodeId())
 				} else {
 					log.Info("Environment is running")
 				}
@@ -276,6 +279,7 @@ func (c *AgentConn) OnMessage() error {
 			EnvPlugin = shared.CreatePluginConfig(m.Body.EnvId)
 			env, client_conf.client = pluginRPC(&EnvPlugin)
 			client_conf.init = true
+			defer client_conf.client.Kill()
 			c.InitLaunch(&m)
 		} else if m.Method == "v0.env.reset" {
 			c.InitReset(&m)
@@ -327,13 +331,13 @@ func (c *AgentConn) InitReset(m *Message) {
 	c.SendResetReply(m.Headers.MessageId, err)
 }
 
-func (c *AgentConn) SendResetReply(parent_message_id string, err error) error {
+func (c *AgentConn) SendResetReply(parent_message_id int32, err error) error {
 
 	if err != nil {
 		method := "v0.reply.error"
 
 		headers := Headers{
-			Sent_at:         time.Now().Unix(),
+			Sent_at:         float64(time.Now().UnixNano() / 1000000),
 			EpisodeId:       c.envState.GetEpisodeId(),
 			ParentMessageId: parent_message_id,
 		}
@@ -356,7 +360,7 @@ func (c *AgentConn) SendResetReply(parent_message_id string, err error) error {
 		method := "v0.reply.env.reset"
 
 		headers := Headers{
-			Sent_at:         time.Now().Unix(),
+			Sent_at:         float64(time.Now().UnixNano() / 1000000),
 			EpisodeId:       c.envState.GetEpisodeId(),
 			ParentMessageId: parent_message_id,
 		}
@@ -408,12 +412,12 @@ func (c *AgentConn) SendMessage(m Message) error {
 	return err
 }
 
-func (c *AgentConn) SendEnvReward(reward float32, done bool) error {
+func (c *AgentConn) SendEnvReward(reward float32, done bool, info string) error {
 
 	method := "v0.env.reward"
 
 	headers := Headers{
-		Sent_at:   time.Now().Unix(),
+		Sent_at:   float64(time.Now().UnixNano() / 1000000),
 		EpisodeId: c.envState.GetEpisodeId(),
 	}
 
@@ -421,6 +425,7 @@ func (c *AgentConn) SendEnvReward(reward float32, done bool) error {
 		EnvId:  c.envState.GetEnvId(),
 		Reward: reward,
 		Done:   done,
+		Info:   info,
 	}
 
 	m := Message{
@@ -455,7 +460,7 @@ func (c *AgentConn) SendEnvObservation() error {
 	method := "v0.env.observation"
 
 	headers := Headers{
-		Sent_at:   time.Now().Unix(),
+		Sent_at:   float64(time.Now().UnixNano() / 1000000),
 		EpisodeId: c.envState.GetEpisodeId(),
 	}
 
@@ -485,7 +490,7 @@ func (c *AgentConn) SendEnvInfo() error {
 	method := "v0.env.info"
 
 	headers := Headers{
-		Sent_at:   time.Now().Unix(),
+		Sent_at:   float64(time.Now().UnixNano() / 1000000),
 		EpisodeId: c.envState.GetEpisodeId(),
 	}
 
@@ -510,7 +515,7 @@ func (c *AgentConn) SendEnvDescribe() error {
 	method := "v0.env.describe"
 
 	headers := Headers{
-		Sent_at:   time.Now().Unix(),
+		Sent_at:   float64(time.Now().UnixNano() / 1000000),
 		EpisodeId: c.envState.GetEpisodeId(),
 	}
 
