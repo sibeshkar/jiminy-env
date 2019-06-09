@@ -39,12 +39,6 @@ separate processes and communicate over the network.  The agent's
 machine runs the environment **client** code, which connects
 to the **remote** environment server.
 
-Many related environments can be served from the same **runtime**,
-usually packaged as a Docker container. For example, all the flash
-games in Universe are served from the ``flashgames`` runtime, which
-consists of the ``quay.io/openai/universe.flashgames`` Docker image
-and runs with its corresponding set of configuration flags.
-
 Each remote exposes two ports:
 
 - A VNC port (5900 by default). The remote runs an off-the-shelf VNC
