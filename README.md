@@ -71,11 +71,6 @@ system. VNC is a pervasive standard for remote desktop operation. Many
 implementations of VNC are available online, including VNC viewers
 that make it easy to observe a running agent.
 
-To achieve the performance we needed in order to train an
-agent on dozens of simultaneous remote environments at 60FPS, we wrote a
-`custom client-side VNC driver <https://github.com/openai/go-vncdriver>`__
-in go. The remote VNC server that we use in most of our runtimes is `TigerVNC <http://tigervnc.org/>`__
-
 More information about the Remote Frame Buffer protocol can be found
 in the official `IETF RFC <https://tools.ietf.org/html/rfc6143>`__
 spec, and in other tutorials elsewhere on the internet.
