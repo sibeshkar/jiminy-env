@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/base64"
-	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
@@ -29,8 +28,14 @@ var EnvPlugin shared.PluginConfig
 var upgrader = websocket.Upgrader{}
 
 var env shared.Env
+var client_conf ClientConfig
 
 var agent_conn AgentConn
+
+type ClientConfig struct {
+	client *plugin.Client
+	init   bool
+}
 
 type AgentConn struct {
 	ws       *websocket.Conn
@@ -38,15 +43,15 @@ type AgentConn struct {
 }
 
 type Headers struct {
-	Sent_at         int64   `json:"sent_at"`
-	MessageId       string  `json:"message_id"`
-	ParentMessageId string  `json:"parent_message_id"`
-	EpisodeId       float32 `json:"episode_id"`
+	Sent_at         float64 `json:"sent_at"`
+	MessageId       int32   `json:"message_id"`
+	ParentMessageId int32   `json:"parent_message_id"`
+	EpisodeId       int64   `json:"episode_id"`
 }
 
 type Body struct {
 	EnvId     string  `json:"env_id"`
-	EnvStatus string  `json:"env_status"`
+	EnvStatus string  `json:"env_state"` //TODO : Fix inconsistency later
 	Fps       float32 `json:"fps"`
 	Reward    float32 `json:"reward"`
 	Done      bool    `json:"done"`
@@ -55,6 +60,7 @@ type Body struct {
 	Info      string  `json:"info"`
 	InfoType  string  `json:"info_type"`
 	Message   string  `json:"message"`
+	Seed      int64   `json:"seed"`
 }
 
 type Message struct {
@@ -73,8 +79,15 @@ func main() {
 			Aliases: []string{"a"},
 			Usage:   "Run an installed environment. e.g. sibeshkar/wob-v0",
 			Action: func(c *cli.Context) error {
-				log.Info("added task: ", c.Args().First())
-				Run(c.Args().First())
+
+				if len(c.Args().First()) != 0 {
+					log.Info("Running environment: ", c.Args().First())
+					log.Info("Running websocket server...")
+					RunPlugin(c.Args().First())
+				} else {
+					log.Info("Running websocket server...")
+					RunEmpty()
+				}
 				return nil
 			},
 		},
@@ -83,7 +96,7 @@ func main() {
 			Aliases: []string{"c"},
 			Usage:   "Install env plugin from directory or zip file.",
 			Action: func(c *cli.Context) error {
-				fmt.Println("the directory is ", c.Args().First())
+				log.Info("the directory is ", c.Args().First())
 				var format []string = strings.Split(c.Args().First(), ".")
 				if format[len(format)-1] == "zip" {
 					shared.InstallFromArchive(c.Args().First())
@@ -99,7 +112,7 @@ func main() {
 			Aliases: []string{"c"},
 			Usage:   "Zip plugin folder according to config.json to create zip archive inside",
 			Action: func(c *cli.Context) error {
-				fmt.Println("the directory is ", c.Args().First())
+				log.Info("the directory is ", c.Args().First())
 
 				shared.CreateArchive(c.Args().First())
 
@@ -115,11 +128,21 @@ func main() {
 
 }
 
-func Run(pluginLink string) {
+func RunPlugin(pluginLink string) {
 
 	EnvPlugin = shared.CreatePluginConfig(pluginLink)
-	env = pluginRPC(&EnvPlugin)
+	env, client_conf.client = pluginRPC(&EnvPlugin)
+	client_conf.init = true
+	//TODO: client.Kill() before ending process, otherwise there are zombie plugin processes
 	go env.Init(pluginLink)
+	env.Launch(pluginLink)
+	http.HandleFunc("/", handler)
+	log.Fatal(http.ListenAndServe(":15900", nil))
+
+}
+
+func RunEmpty() {
+
 	http.HandleFunc("/", handler)
 	log.Fatal(http.ListenAndServe(":15900", nil))
 
@@ -131,7 +154,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	fmt.Println("Connected to ", agent_conn.ws.RemoteAddr())
+	log.Info("Connected to ", agent_conn.ws.RemoteAddr())
 
 	go agent_conn.OnMessage()
 
@@ -148,20 +171,21 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(100 * time.Microsecond)
 		case "running":
 			reward, done, _ := env.GetReward()
-			if err := agent_conn.SendEnvReward(reward, done); err != nil {
+			if err := agent_conn.SendEnvReward(reward, done, `{}`); err != nil {
 				log.Error(err)
 			}
-			if err := agent_conn.SendEnvObservation(); err != nil {
-				log.Error(err)
-			}
+
+			//Muted this temporarily
+			// if err := agent_conn.SendEnvObservation(); err != nil {
+			// 	log.Error(err)
+			// }
 
 			if done != lastdone {
 				if done {
 					go agent_conn.Reset()
 					log.Info("Environment is resetting to task again")
 					agent_conn.envState.SetEpisodeId(agent_conn.envState.GetEpisodeId() + 1)
-					log.Info("Episode ID is", agent_conn.envState.GetEpisodeId())
-
+					log.Info("Episode ID is ", agent_conn.envState.GetEpisodeId())
 				} else {
 					log.Info("Environment is running")
 				}
@@ -176,7 +200,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func pluginRPC(pluginObj *shared.PluginConfig) shared.Env {
+func pluginRPC(pluginObj *shared.PluginConfig) (shared.Env, *plugin.Client) {
 	//log.SetOutput(ioutil.Discard)
 
 	logger := hclog.New(&hclog.LoggerOptions{
@@ -199,22 +223,23 @@ func pluginRPC(pluginObj *shared.PluginConfig) shared.Env {
 	// Connect via RPC
 	rpcClient, err := client.Client()
 	if err != nil {
-		fmt.Println("Error:", err.Error())
+		log.Info("Error:", err.Error())
 		os.Exit(1)
 	}
 
 	// Request the plugin
 	raw, err := rpcClient.Dispense("env_grpc")
 	if err != nil {
-		fmt.Println("Error:", err.Error())
+		log.Info("Error:", err.Error())
 		os.Exit(1)
 	}
 
 	// We should have a KV store now! This feels like a normal interface
 	// implementation but is in fact over an RPC connection.
-	return raw.(shared.Env)
+	return raw.(shared.Env), client
 }
 
+//Create new AgentConnection
 func NewAgentConn(w http.ResponseWriter, r *http.Request) (AgentConn, error) {
 
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -236,6 +261,7 @@ func NewAgentConn(w http.ResponseWriter, r *http.Request) (AgentConn, error) {
 	return agent_conn, err
 }
 
+//Concurrent process to process incoming websocket messages
 func (c *AgentConn) OnMessage() error {
 	for {
 		//_, msg, err := conn.ReadMessage()
@@ -245,6 +271,15 @@ func (c *AgentConn) OnMessage() error {
 			return err
 		}
 		if m.Method == "v0.env.launch" {
+			if client_conf.init {
+				client_conf.client.Kill()
+				client_conf.init = false
+			}
+
+			EnvPlugin = shared.CreatePluginConfig(m.Body.EnvId)
+			env, client_conf.client = pluginRPC(&EnvPlugin)
+			client_conf.init = true
+			defer client_conf.client.Kill()
 			c.InitLaunch(&m)
 		} else if m.Method == "v0.env.reset" {
 			c.InitReset(&m)
@@ -256,16 +291,18 @@ func (c *AgentConn) OnMessage() error {
 
 }
 
+//What is called on Initial Launch
 func (c *AgentConn) InitLaunch(m *Message) {
-	fmt.Printf("launch message received: %s\n", m.Body.EnvId)
+	log.Info("launch message received: %s\n", m.Body.EnvId)
 	c.envState.SetEnvStatus("launching")
-
+	go env.Init(m.Body.EnvId)
 	result, err := env.Launch(m.Body.EnvId)
 	if err != nil {
-		fmt.Println("error during launch: \n", err)
+		log.Info("error during launch: \n", err)
 	}
 	c.envState.SetEnvId(m.Body.EnvId)
-	fmt.Println("from binary received: ", result)
+	log.Info("from binary received: ", result)
+	c.envState.SetEnvStatus("resettng")
 }
 
 func (c *AgentConn) SendLaunchReply(parent_message_id string, err error) {
@@ -278,29 +315,29 @@ func (c *AgentConn) SendLaunchReply(parent_message_id string, err error) {
 }
 
 func (c *AgentConn) InitReset(m *Message) {
-	fmt.Println("reset message received: %s\n", m.Body.EnvId)
+	log.Info("reset message received: %s\n", m.Body.EnvId)
 	c.envState.SetEnvStatus("resetting")
 
 	result, err := env.Reset(m.Body.EnvId)
 	if err != nil {
-		fmt.Println("error during reset: \n", err)
+		log.Info("error during reset: \n", err)
 	} else {
 		c.envState.SetEnvStatus("running")
 		c.envState.SetEnvId(m.Body.EnvId)
-		fmt.Println("from binary received: ", result)
+		log.Info("from binary received: ", result)
 
 	}
 
 	c.SendResetReply(m.Headers.MessageId, err)
 }
 
-func (c *AgentConn) SendResetReply(parent_message_id string, err error) error {
+func (c *AgentConn) SendResetReply(parent_message_id int32, err error) error {
 
 	if err != nil {
 		method := "v0.reply.error"
 
 		headers := Headers{
-			Sent_at:         time.Now().Unix(),
+			Sent_at:         float64(time.Now().UnixNano() / 1000000),
 			EpisodeId:       c.envState.GetEpisodeId(),
 			ParentMessageId: parent_message_id,
 		}
@@ -323,7 +360,7 @@ func (c *AgentConn) SendResetReply(parent_message_id string, err error) error {
 		method := "v0.reply.env.reset"
 
 		headers := Headers{
-			Sent_at:         time.Now().Unix(),
+			Sent_at:         float64(time.Now().UnixNano() / 1000000),
 			EpisodeId:       c.envState.GetEpisodeId(),
 			ParentMessageId: parent_message_id,
 		}
@@ -350,7 +387,7 @@ func (c *AgentConn) Reset() {
 
 	_, err := env.Reset(c.envState.GetEnvId())
 	if err != nil {
-		fmt.Println("error during reset: \n", err)
+		log.Info("error during reset: \n", err)
 	}
 
 	c.envState.SetEnvStatus("running")
@@ -358,12 +395,12 @@ func (c *AgentConn) Reset() {
 }
 
 func (c *AgentConn) Close(m *Message) {
-	fmt.Println("close message received: %s\n", m.Body.EnvId)
+	log.Info("close message received: %s\n", m.Body.EnvId)
 	result, err := env.Close(m.Body.EnvId)
 	if err != nil {
-		fmt.Println("error during close: \n", err)
+		log.Info("error during close: \n", err)
 	}
-	fmt.Println("from binary received: ", result)
+	log.Info("from binary received: ", result)
 }
 
 //Send a message to connected Agent
@@ -375,12 +412,12 @@ func (c *AgentConn) SendMessage(m Message) error {
 	return err
 }
 
-func (c *AgentConn) SendEnvReward(reward float32, done bool) error {
+func (c *AgentConn) SendEnvReward(reward float32, done bool, info string) error {
 
 	method := "v0.env.reward"
 
 	headers := Headers{
-		Sent_at:   time.Now().Unix(),
+		Sent_at:   float64(time.Now().UnixNano() / 1000000),
 		EpisodeId: c.envState.GetEpisodeId(),
 	}
 
@@ -388,6 +425,7 @@ func (c *AgentConn) SendEnvReward(reward float32, done bool) error {
 		EnvId:  c.envState.GetEnvId(),
 		Reward: reward,
 		Done:   done,
+		Info:   info,
 	}
 
 	m := Message{
@@ -410,7 +448,7 @@ func (c *AgentConn) SendEnvObservation() error {
 
 	t, obs, err := env.GetEnvObservation(c.envState.EnvId)
 	if err != nil {
-		fmt.Println(err)
+		log.Info(err)
 	}
 	var observation string
 	if t == "image" {
@@ -422,7 +460,7 @@ func (c *AgentConn) SendEnvObservation() error {
 	method := "v0.env.observation"
 
 	headers := Headers{
-		Sent_at:   time.Now().Unix(),
+		Sent_at:   float64(time.Now().UnixNano() / 1000000),
 		EpisodeId: c.envState.GetEpisodeId(),
 	}
 
@@ -446,13 +484,13 @@ func (c *AgentConn) SendEnvInfo() error {
 
 	t, info, err := env.GetEnvInfo(c.envState.EnvId)
 	if err != nil {
-		fmt.Println(err)
+		log.Info(err)
 	}
 
 	method := "v0.env.info"
 
 	headers := Headers{
-		Sent_at:   time.Now().Unix(),
+		Sent_at:   float64(time.Now().UnixNano() / 1000000),
 		EpisodeId: c.envState.GetEpisodeId(),
 	}
 
@@ -477,7 +515,7 @@ func (c *AgentConn) SendEnvDescribe() error {
 	method := "v0.env.describe"
 
 	headers := Headers{
-		Sent_at:   time.Now().Unix(),
+		Sent_at:   float64(time.Now().UnixNano() / 1000000),
 		EpisodeId: c.envState.GetEpisodeId(),
 	}
 
@@ -501,7 +539,7 @@ func (c *AgentConn) SendEnvDescribe() error {
 func DummyObs() {
 	t, obs, err := env.GetEnvObservation("test")
 	if err != nil {
-		fmt.Println(err)
+		log.Info(err)
 	}
 
 	// img, _, err := image.Decode(bytes.NewReader(obs))
@@ -513,14 +551,14 @@ func DummyObs() {
 	// out, err := os.Create("./QRImg.png")
 
 	// if err != nil {
-	// 	fmt.Println(err)
+	// 	log.Info(err)
 	// 	os.Exit(1)
 	// }
 
 	// err = png.Encode(out, img)
 
 	// if err != nil {
-	// 	fmt.Println(err)
+	// 	log.Info(err)
 	// 	os.Exit(1)
 	// }
 	//obsString := base64.StdEncoding.EncodeToString(obs)
@@ -530,20 +568,20 @@ func DummyObs() {
 	} else {
 		observation = string(obs)
 	}
-	fmt.Println("The type is ", t)
-	fmt.Println("The obs is ", observation)
+	log.Info("The type is ", t)
+	log.Info("The obs is ", observation)
 }
 
 func DummyInfo() {
 
 	t, info, err := env.GetEnvInfo("test")
 	if err != nil {
-		fmt.Println(err)
+		log.Info(err)
 	}
 
 	infoString := base64.StdEncoding.EncodeToString(info)
-	fmt.Println("The type is ", t)
-	fmt.Println("The info is ", infoString)
+	log.Info("The type is ", t)
+	log.Info("The info is ", infoString)
 
 }
 
@@ -554,11 +592,11 @@ func DummyInfo() {
 // 		case status := <-statusChan:
 // 			switch status {
 // 			case "launching":
-// 				fmt.Println("Runtime is launching")
+// 				log.Info("Runtime is launching")
 // 			case "resetting":
-// 				fmt.Println("Env is resetting")
+// 				log.Info("Env is resetting")
 // 			case "running":
-// 				fmt.Println("Env is running")
+// 				log.Info("Env is running")
 // 			}
 // 		case trigger := <-triggerChan:
 // 			switch trigger {
@@ -586,14 +624,14 @@ func DummyInfo() {
 // 	for {
 // 		select {
 // 		case <-ticker.C:
-// 			fmt.Println("Sending reward ", i)
+// 			log.Info("Sending reward ", i)
 // 			agent_conn.Send(ConstructRewardMessage(GetReward()))
 // 			i++
 // 		case state := <-statusChan:
-// 			fmt.Println("Status is", state)
+// 			log.Info("Status is", state)
 // 			agent_conn.envState.SetEnvStatus(state)
 // 			// default:
-// 			// 	fmt.Println("Default option")
+// 			// 	log.Info("Default option")
 // 		}
 
 // 	}

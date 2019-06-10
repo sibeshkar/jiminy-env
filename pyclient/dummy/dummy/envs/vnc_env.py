@@ -80,7 +80,7 @@ class DummyVNCEnv(vectorized.Env):
     It also returns the actions in the observation, so you can test that action wrappers are producing the right answers
     For example, to test that YourActionWrapper converts example_input_action to example_output_action:
 
-    >>> dummy_env = gym.make('sibeshkar/wob-v0')
+    >>> dummy_env = gym.make('VNC.Core-v0')
     >>> e = YourActionWrapper(dummy_env)
     >>> e = jiminy.wrappers.Unvectorize(e)
     >>> observation, reward, done, info = e.step(example_input_action)
@@ -103,7 +103,7 @@ class DummyVNCEnv(vectorized.Env):
         self._remotes_manager = None
 
         self._probe_key = probe_key or 0xbeef1
-        self._seed_value = None
+        self._seed_value = None #non-random int given temporarily
         self.rewarder_session = None
         self.vnc_session = None
         self.observation_space = spaces.VNCObservationSpace()
@@ -111,7 +111,7 @@ class DummyVNCEnv(vectorized.Env):
         self._send_actions_over_websockets = False
         self._skip_network_calibration = True
 
-    def configure(self, remotes=None,
+    def configure(self, envs=None, tasks=None,remotes=None,
                    client_id=None,
                    start_timeout=None, docker_image=None,
                    ignore_clock_skew=False, disable_action_probes=False,
@@ -204,7 +204,8 @@ class DummyVNCEnv(vectorized.Env):
 
         # observation_n = [{
         #     'vision': np.zeros((1024, 768, 3), dtype=np.uint8),
-        #     'text': [],
+        #     'text': [],	//http://127.0.0.1:3000/miniwob/bisect-angle.html
+
         #     'action': action_n[i]
         # } for i in range(self.n)]
 
@@ -291,11 +292,13 @@ class DummyVNCEnv(vectorized.Env):
             # TODO: never log index, just log name
         
         if self.rewarder_session is not None:
-            if self.spec is not None:
-                env_id = self.spec.id
-            else:
-                env_id = None
+            # if self.spec is not None:
+            #     env_id = self.spec.id
+            # else:
+            #     env_id = None
 
+            env_id = 'sibeshkar/wob-v0/ClickShades' #temporarily created, not will pass env_id as argument finally
+            #env_id = 'wob.mini.TicTacToe-v0'
             if self._seed_value is not None:
                 # Once we use a seed, we clear it so we never
                 # accidentally reuse the seed. Seeds are an advanced
@@ -304,7 +307,7 @@ class DummyVNCEnv(vectorized.Env):
                 seed = self._seed_value[i]
                 self._seed_value[i] = None
             else:
-                seed = None
+                seed = 56
 
             assert rewarder_password, "Missing rewarder password: {}".format(rewarder_password)
             network = self.rewarder_session.connect(

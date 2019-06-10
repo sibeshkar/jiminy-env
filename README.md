@@ -156,6 +156,8 @@ env.reward
       }
     }
 
+
+
 env.text
 ~~~~~~~~
 
@@ -239,6 +241,21 @@ reply.env.reset
       },
       "body": {}
     }
+
+reply.env.launch
+~~~~~~~~~~~~~~~
+
+.. code::
+		  
+    {
+      "method": "v0.reply.env.launch",
+      "headers": {
+        "sent_at": 1479493678.1937322617,
+        "message_id": 15,
+    	"parent_message_id": "26",
+      },
+      "body": {}
+    }
     
 reply.control.ping
 ~~~~~~~~~~~~~~~~~~
@@ -305,12 +322,10 @@ env.reset
         "message_id": 15
       },
       "body": {
-        "env_id": "flashgames.DuskDrive-v0"
+        "env_id": "sibeshkar/wob-v0",
+        "task_id": "TicTacToe"
       }
     }
-
-env.launch
-~~~~~~~~~~
 
 
 control.ping

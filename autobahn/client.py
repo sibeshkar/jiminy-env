@@ -95,30 +95,45 @@ class RewarderProtocol(WebSocketClientProtocol):
         payload = {
             'method': method,
             'body': body,
-
         }
 
-        print(payload)
+        #print(payload)
 
-        # payload= {
+        # #payload= {
         #     'method' : 'v0.env.launch',
         #     'body' : {
-        #         'env_id' : 'sibeshkar/wob-v0'
+        #         'env_id' : 'sibeshkar/wob-v0',
         #     }
         # }
-        # self.sendMessage(ujson.dumps(payload_launch).encode('utf-8'), False)
+        #self.sendMessage(ujson.dumps(payload).encode('utf-8'), False)
+
+        # payload_reset = {
+        #     'method' : 'v0.env.reset',
+            
+        #     'body' : {
+        #         'seed': 56,
+        #         'env_id' : 'sibeshkar/wob-v0/ClickShades',
+        #         'fps': 60
+        #     },
+        #     'headers' : {
+        #         'message_id' : '0',
+        #         'sent_at': 1560007971.97964,
+        #         'episode_id': 0
+        #     },
+        # }
 
         payload_reset = {
-            'method' : 'v0.env.reset',
-            'headers' : {
-                'parent_message_id' : '12'
-            },
-            'body' : {
-                'env_id' : 'sibeshkar/wob-v0/ClickShades'
+            'method': 'v0.env.reset', 
+            'body': {'seed': 56, 'env_id': 'sibeshkar/wob-v0/ClickShades', 'fps': 60}, 
+            'headers': {'message_id': 0, 'sent_at': 1560081689.9166744, 'episode_id': 0}
             }
-        }
 
-        self.sendMessage(ujson.dumps(payload).encode('utf-8'), False)
+        #payload_reset_2 = {'method': 'v0.env.reset', 'body': {'seed': 56, 'env_id': 'sibeshkar/wob-v0/ClickShades', 'fps': 60}, 'headers': {'message_id': 0, 'sent_at': 1560082557.4949555, 'episode_id': 0}}
+
+
+        #{'method': 'v0.env.reset', 'body': {'seed': None, 'env_id': 'sibeshkar/wob-v0', 'fps': 60}, 'headers': {'message_id': 0, 'sent_at': 1560007971.97964, 'episode_id': '0'}}
+
+        #self.sendMessage(ujson.dumps(payload).encode('utf-8'), False)
         self.sendMessage(ujson.dumps(payload_reset).encode('utf-8'), False)
         #self.send()
         # if expect_reply:
