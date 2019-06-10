@@ -298,7 +298,7 @@ class DummyVNCEnv(vectorized.Env):
             #     env_id = None
 
             env_id = 'sibeshkar/wob-v0/ClickShades' #temporarily created, not will pass env_id as argument finally
-
+            #env_id = 'wob.mini.TicTacToe-v0'
             if self._seed_value is not None:
                 # Once we use a seed, we clear it so we never
                 # accidentally reuse the seed. Seeds are an advanced

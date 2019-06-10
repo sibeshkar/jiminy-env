@@ -171,7 +171,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(100 * time.Microsecond)
 		case "running":
 			reward, done, _ := env.GetReward()
-			if err := agent_conn.SendEnvReward(reward, done, "{}"); err != nil {
+			if err := agent_conn.SendEnvReward(reward, done, `{}`); err != nil {
 				log.Error(err)
 			}
 

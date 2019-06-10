@@ -39,7 +39,7 @@ docker:
 	docker build . -t sibeshkar/jiminy-env:$(VERSION) --force-rm
 
 docker-run:
-	docker run -it --rm -p 5900:5900 -p 15900:15900 sibeshkar/jiminy-env:$(VERSION)
+	docker run -it --rm -p 5901:5900 -p 15901:15900 sibeshkar/jiminy-env:$(VERSION)
 
 # Cross compilation
 build-linux:
