@@ -51,7 +51,7 @@ type Headers struct {
 
 type Body struct {
 	EnvId     string  `json:"env_id"`
-	EnvStatus string  `json:"env_status"`
+	EnvStatus string  `json:"env_state"` //TODO : Fix inconsistency later
 	Fps       float32 `json:"fps"`
 	Reward    float32 `json:"reward"`
 	Done      bool    `json:"done"`
