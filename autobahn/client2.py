@@ -26,22 +26,22 @@ class RewarderProtocol(WebSocketClientProtocol):
 
     def _send(self):
         pass
-        # payload_launch = {
-        #     'method' : 'v0.env.launch',
-        #     'body' : {
-        #         'env_id' : 'sibeshkar/wob-v0'
-        #     }
-        # }
-        # self.sendMessage(ujson.dumps(payload_launch).encode('utf-8'), False)
+        payload_launch = {
+            'method' : 'v0.env.launch',
+            'body' : {
+                'env_id' : 'sibeshkar/wob-v0'
+            }
+        }
+        self.sendMessage(ujson.dumps(payload_launch).encode('utf-8'), False)
 
-        # payload_reset = {
-        #     'method' : 'v0.env.reset',
-        #     'body' : {
-        #         'env_id' : 'sibeshkar/wob-v0/ClickShades'
-        #     }
-        # }
+        payload_reset = {
+            'method' : 'v0.env.reset',
+            'body' : {
+                'env_id' : 'sibeshkar/wob-v0/ClickShades'
+            }
+        }
 
-        # self.sendMessage(ujson.dumps(payload_reset).encode('utf-8'), False)
+        self.sendMessage(ujson.dumps(payload_reset).encode('utf-8'), False)
         #self.send()
     
     def send(self):
@@ -184,8 +184,8 @@ if __name__ == '__main__':
 
     log.startLogging(sys.stdout)
 
-    factory = WebSocketClientFactory(u"ws://127.0.0.1:15900")
+    factory = WebSocketClientFactory(u"ws://127.0.0.1:15901")
     factory.protocol = RewarderProtocol
 
-    reactor.connectTCP("127.0.0.1", 15900, factory)
+    reactor.connectTCP("127.0.0.1", 15901, factory)
     reactor.run()
