@@ -18,6 +18,7 @@ import (
 )
 
 var EnvPlugin shared.PluginConfig
+var defaultFps float32 = 20
 
 //jiminy run sibeshkar/wob-v0/TicTacToe
 //jiminy install <folder>
@@ -160,6 +161,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	var lastdone bool = true
 
+mainloop:
 	for {
 
 		switch agent_conn.envState.EnvStatus {
@@ -173,6 +175,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			reward, done, _ := env.GetReward()
 			if err := agent_conn.SendEnvReward(reward, done, `{}`); err != nil {
 				log.Error(err)
+				break mainloop
 			}
 
 			//Muted this temporarily
@@ -205,7 +208,7 @@ func pluginRPC(pluginObj *shared.PluginConfig) (shared.Env, *plugin.Client) {
 
 	logger := hclog.New(&hclog.LoggerOptions{
 		Output: hclog.DefaultOutput,
-		//Level:  hclog.Trace,
+		//Level:  hclog.Trace, //Uncomment this line to get more detailed plugin Trace errors
 		Name: "plugin",
 	})
 
@@ -248,7 +251,7 @@ func NewAgentConn(w http.ResponseWriter, r *http.Request) (AgentConn, error) {
 		log.Println(err)
 	}
 
-	envState, err := NewEnvState("", "launching", 1, 20)
+	envState, err := NewEnvState("", "launching", 1, defaultFps)
 	agent_conn := AgentConn{
 		ws:       conn,
 		envState: envState,
