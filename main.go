@@ -303,14 +303,56 @@ func (c *AgentConn) InitLaunch(m *Message) {
 	c.envState.SetEnvId(m.Body.EnvId)
 	log.Info("from binary received: ", result)
 	c.envState.SetEnvStatus("resettng")
+
+	c.SendLaunchReply(m.Headers.MessageId, err)
 }
 
-func (c *AgentConn) SendLaunchReply(parent_message_id string, err error) {
+func (c *AgentConn) SendLaunchReply(parent_message_id int32, err error) error {
 
-	//include this inside everytime
-	// func (c *AgentConn) SendLaunchError() {
+	if err != nil {
+		method := "v0.reply.error"
 
-	// }
+		headers := Headers{
+			Sent_at:         float64(time.Now().UnixNano() / 1000000),
+			EpisodeId:       c.envState.GetEpisodeId(),
+			ParentMessageId: parent_message_id,
+		}
+
+		body := Body{
+			Message: err.Error(),
+		}
+
+		m := Message{
+			Method:  method,
+			Headers: headers,
+			Body:    body,
+		}
+
+		err = c.SendMessage(m)
+		return err
+
+	} else {
+
+		method := "v0.reply.env.launch"
+
+		headers := Headers{
+			Sent_at:         float64(time.Now().UnixNano() / 1000000),
+			EpisodeId:       c.envState.GetEpisodeId(),
+			ParentMessageId: parent_message_id,
+		}
+
+		body := Body{}
+
+		m := Message{
+			Method:  method,
+			Headers: headers,
+			Body:    body,
+		}
+
+		err = c.SendMessage(m)
+		return err
+
+	}
 
 }
 

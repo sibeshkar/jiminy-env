@@ -29,7 +29,8 @@ class RewarderProtocol(WebSocketClientProtocol):
         payload_launch = {
             'method' : 'v0.env.launch',
             'body' : {
-                'env_id' : 'sibeshkar/wob-v0'
+                'env_id' : 'sibeshkar/wob-v0',
+                'fps' : 30
             }
         }
         self.sendMessage(ujson.dumps(payload_launch).encode('utf-8'), False)

@@ -8,7 +8,8 @@ if __name__ == "__main__":
     env = jiminy.wrappers.experimental.SoftmaxClickMouse(env)
 
     #env.configure(remotes='vnc://gpu:5900+15900')
-    env.configure(remotes='vnc://0.0.0.0:5901+15901')
+    env.configure(env='sibeshkar/wob-v0', task='TicTacToe', remotes='vnc://localhost:5901+15901')
+
     obs = env.reset()
 
     while True:
@@ -20,7 +21,7 @@ if __name__ == "__main__":
         break
 
     for idx in range(500):
-        time.sleep(1)
+        time.sleep(0.1)
         a = env.action_space.sample()
         obs, reward, is_done, info = env.step([a])
         if obs[0] is None:
