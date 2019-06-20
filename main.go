@@ -8,13 +8,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/sibeshkar/jiminy-env/shared"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
-
-	"github.com/gorilla/websocket"
 )
 
 var EnvPlugin shared.PluginConfig
@@ -78,13 +77,19 @@ func main() {
 		{
 			Name:    "run",
 			Aliases: []string{"a"},
-			Usage:   "Run an installed environment. e.g. sibeshkar/wob-v0",
+			Usage:   "Run an installed environment. e.g. {empty} or sibeshkar/wob-v0 or sibeshkar/wob-v0/TicTacToe",
 			Action: func(c *cli.Context) error {
 
 				if len(c.Args().First()) != 0 {
-					log.Info("Running environment: ", c.Args().First())
-					log.Info("Running websocket server...")
-					RunPlugin(c.Args().First())
+					s := strings.Split(c.Args().First(), "/")
+					if len(s) == 2 {
+
+						RunPlugin(c.Args().First())
+
+					} else if len(s) == 3 {
+						RunPluginTask(c.Args().First())
+					}
+
 				} else {
 					log.Info("Running websocket server...")
 					RunEmpty()
@@ -131,12 +136,38 @@ func main() {
 
 func RunPlugin(pluginLink string) {
 
+	log.Info("Running environment: ", pluginLink)
+
 	EnvPlugin = shared.CreatePluginConfig(pluginLink)
 	env, client_conf.client = pluginRPC(&EnvPlugin)
 	client_conf.init = true
 	//TODO: client.Kill() before ending process, otherwise there are zombie plugin processes
 	go env.Init(pluginLink)
 	env.Launch(pluginLink)
+	log.Info("Running websocket server...")
+	http.HandleFunc("/", handler)
+	log.Fatal(http.ListenAndServe(":15900", nil))
+
+}
+
+func RunPluginTask(pluginLink string) {
+
+	s := strings.Split(pluginLink, "/")
+
+	envPluginLink := s[0] + "/" + s[1]
+	log.Info("Running environment: ", envPluginLink)
+
+	EnvPlugin = shared.CreatePluginConfig(envPluginLink)
+	env, client_conf.client = pluginRPC(&EnvPlugin)
+	client_conf.init = true
+	//TODO: client.Kill() before ending process, otherwise there are zombie plugin processes
+	go env.Init(envPluginLink)
+	env.Launch(envPluginLink)
+
+	log.Info("Resetting to task: ", pluginLink)
+	env.Reset(pluginLink)
+
+	log.Info("Running websocket server...")
 	http.HandleFunc("/", handler)
 	log.Fatal(http.ListenAndServe(":15900", nil))
 
