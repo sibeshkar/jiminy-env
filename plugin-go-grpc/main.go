@@ -52,7 +52,7 @@ func (Env) Init(key string) (string, error) {
 
 	os.MkdirAll(recordingDir, os.ModePerm)
 
-	proxy := create_vnc_proxy("", "/app", ":5902", "boxware", "localhost", "boxware", "5901", "dummyDesk")
+	proxy := create_vnc_proxy("", recordingDir, ":5901", "boxware", "localhost", "boxware", "5900", "dummyDesk")
 
 	go proxy.StartListening()
 
@@ -161,7 +161,6 @@ func (Env) GetEnvObservation(key string) (string, []byte, error) {
 }
 
 //Misc info to get once every episode
-
 func (Env) GetEnvInfo(key string) (string, []byte, error) {
 
 	instruction, err := safe_execute("return document.querySelector('#query').textContent", nil)
