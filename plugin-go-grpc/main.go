@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -20,7 +19,6 @@ var (
 	pluginConfig    shared.PluginConfig
 	wd              selenium.WebDriver
 	service         *selenium.Service
-	server          *http.Server
 	filesPath       string
 )
 
@@ -49,6 +47,14 @@ func (Env) Init(key string) (string, error) {
 			log.Fatalf("cmd.Run() failed with %s\n", err)
 		}
 	}
+
+	recordingDir := shared.UserHomeDir() + "/" + ".jiminy/plugins/" + key + "/recordings/"
+
+	os.MkdirAll(recordingDir, os.ModePerm)
+
+	proxy := create_vnc_proxy("", "/app", ":5902", "boxware", "localhost", "boxware", "5901", "dummyDesk")
+
+	go proxy.StartListening()
 
 	serve_static(key)
 	return "env is initialized:" + key, err

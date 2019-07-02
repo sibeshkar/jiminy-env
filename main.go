@@ -239,8 +239,8 @@ func pluginRPC(pluginObj *shared.PluginConfig) (shared.Env, *plugin.Client) {
 
 	logger := hclog.New(&hclog.LoggerOptions{
 		Output: hclog.DefaultOutput,
-		//Level:  hclog.Trace, //Uncomment this line to get more detailed plugin Trace errors
-		Name: "plugin",
+		Level:  hclog.Trace, //Uncomment this line to get more detailed plugin Trace errors
+		Name:   "plugin",
 	})
 
 	// We're a host. Start by launching the plugin process.
