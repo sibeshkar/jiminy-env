@@ -30,10 +30,14 @@ run:
 	export ENV_PLUGIN="./$(PLUGIN_BINARY_NAME)"
 	./$(CONTROLLER_BINARY_NAME)
 
+plugin:
+	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(PLUGIN_FOLDER)/$(PLUGIN_BINARY_NAME) -v $(PLUGIN_FOLDER)
+
 install:
 	$(GOBUILD) -o $(GOPATH)/bin/$(CONTROLLER_BINARY_NAME)
 
 docker:
+	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(PLUGIN_FOLDER)/$(PLUGIN_BINARY_NAME) -v $(PLUGIN_FOLDER)
 	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(CONTROLLER_BINARY_NAME) -v
 	jiminy zip plugin-go-grpc/
 	docker build . -t sibeshkar/jiminy-env:$(VERSION) --force-rm
