@@ -167,7 +167,7 @@ func (Env) GetEnvObs(key string) (string, []byte, error) {
 
 	info := []byte(instruction.(string))
 
-	return "instruction", info, err
+	return "dom", info, err
 
 }
 

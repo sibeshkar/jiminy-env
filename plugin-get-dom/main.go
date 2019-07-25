@@ -181,7 +181,7 @@ func (Env) GetEnvObs(key string) (string, []byte, error) {
 
 	obs, err := json.Marshal(reply)
 
-	return "instruction", obs, err
+	return "dom", obs, err
 
 }
 
