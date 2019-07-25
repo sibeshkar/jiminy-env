@@ -209,10 +209,13 @@ mainloop:
 				break mainloop
 			}
 
-			//Muted this temporarily
 			// if err := agent_conn.SendEnvObservation(); err != nil {
 			// 	log.Error(err)
 			// }
+
+			// t, obs, err := env.GetEnvInfo("agent_conn.envState.EnvId")
+
+			// log.Infof("The type is %v, the obs is %v, error is %v:", t, obs, err)
 
 			if done != lastdone {
 				if done {

@@ -8,9 +8,11 @@ GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 CONTROLLER_BINARY_NAME=jiminy
 CONTROLLER_BINARY_UNIX=$(CONTROLLER_BINARY_NAME)_unix
-PLUGIN_BINARY_NAME=wob-v0
+PLUGIN_BINARY_NAME_1=wob-v0
 PLUGIN_BINARY_UNIX=$(PLUGIN_BINARY_NAME)_unix
-PLUGIN_FOLDER=./plugin-go-grpc
+PLUGIN_FOLDER_1=./plugin-go-grpc
+PLUGIN_FOLDER_2=./plugin-get-dom
+PLUGIN_BINARY_NAME_2=wob-v1
 VERSION=0.1.0
 
 all:build
@@ -24,22 +26,29 @@ test:
 clean: 
 	$(GOCLEAN)
 	rm -rf $(CONTROLLER_BINARY_NAME)
-	rm -rf $(PLUGIN_FOLDER)/$(PLUGIN_BINARY_NAME)
-	rm -rf $(PLUGIN_FOLDER)/$(PLUGIN_BINARY_NAME).zip
+	rm -rf $(PLUGIN_FOLDER_1)/$(PLUGIN_BINARY_NAME_1)
+	rm -rf $(PLUGIN_FOLDER_1)/$(PLUGIN_BINARY_NAME_1).zip
+	rm -rf $(PLUGIN_FOLDER_2)/$(PLUGIN_BINARY_NAME_2)
+	rm -rf $(PLUGIN_FOLDER_2)/$(PLUGIN_BINARY_NAME_2).zip
 run:
 	export ENV_PLUGIN="./$(PLUGIN_BINARY_NAME)"
 	./$(CONTROLLER_BINARY_NAME)
 
-plugin:
-	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(PLUGIN_FOLDER)/$(PLUGIN_BINARY_NAME) -v $(PLUGIN_FOLDER)
+plugin-v1:
+	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(PLUGIN_FOLDER_1)/$(PLUGIN_BINARY_NAME_1) -v $(PLUGIN_FOLDER_1)
+
+plugin-v2:
+	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(PLUGIN_FOLDER_2)/$(PLUGIN_BINARY_NAME_2) -v $(PLUGIN_FOLDER_2)
 
 install:
 	$(GOBUILD) -o $(GOPATH)/bin/$(CONTROLLER_BINARY_NAME)
 
 docker:
-	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(PLUGIN_FOLDER)/$(PLUGIN_BINARY_NAME) -v $(PLUGIN_FOLDER)
+	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(PLUGIN_FOLDER_1)/$(PLUGIN_BINARY_NAME_1) -v $(PLUGIN_FOLDER_1)
+	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(PLUGIN_FOLDER_2)/$(PLUGIN_BINARY_NAME_2) -v $(PLUGIN_FOLDER_2)
 	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(CONTROLLER_BINARY_NAME) -v
 	jiminy zip plugin-go-grpc/
+	jiminy zip plugin-get-dom/
 	docker build . -t sibeshkar/jiminy-env:$(VERSION) --force-rm
 
 docker-run:

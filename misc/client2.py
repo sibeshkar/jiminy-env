@@ -29,7 +29,7 @@ class RewarderProtocol(WebSocketClientProtocol):
         payload_launch = {
             'method' : 'v0.env.launch',
             'body' : {
-                'env_id' : 'sibeshkar/wob-v0',
+                'env_id' : 'sibeshkar/wob-v1',
                 'fps' : 30
             }
         }
@@ -38,7 +38,7 @@ class RewarderProtocol(WebSocketClientProtocol):
         payload_reset = {
             'method' : 'v0.env.reset',
             'body' : {
-                'env_id' : 'sibeshkar/wob-v0/ClickShades'
+                'env_id' : 'sibeshkar/wob-v1/ClickButton'
             }
         }
 
@@ -185,8 +185,8 @@ if __name__ == '__main__':
 
     log.startLogging(sys.stdout)
 
-    factory = WebSocketClientFactory(u"ws://127.0.0.1:15901")
+    factory = WebSocketClientFactory(u"ws://127.0.0.1:15900")
     factory.protocol = RewarderProtocol
 
-    reactor.connectTCP("127.0.0.1", 15901, factory)
+    reactor.connectTCP("127.0.0.1", 15900, factory)
     reactor.run()
