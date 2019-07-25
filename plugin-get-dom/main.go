@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -146,30 +147,41 @@ func (Env) GetReward() (float32, bool, error) {
 	return reward, done, err
 }
 
-func (Env) GetEnvObservation(key string) (string, []byte, error) {
+// func (Env) GetEnvObservation(key string) (string, []byte, error) {
 
-	//obs, err := wd.Screenshot()
-	// fmt.Println(source)
-	// source, err := wd.PageSource()
+// 	//obs, err := wd.Screenshot()
+// 	// fmt.Println(source)
+// 	// source, err := wd.PageSource()
 
-	// //obs, err := base64.StdEncoding.DecodeString(source)
+// 	// //obs, err := base64.StdEncoding.DecodeString(source)
 
-	// obs := []byte(source)
+// 	// obs := []byte(source)
+// 	reply, err := safe_execute("return core.getDOMInfo();", nil)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 	}
 
-	obs := []byte("DEMO STRING")
+// 	obs, err := json.Marshal(reply)
 
-	return "dom", obs, nil
+// 	return "dom", obs, nil
 
-}
+// }
 
 //Misc info to get once every episode
-func (Env) GetEnvInfo(key string) (string, []byte, error) {
+func (Env) GetEnvObs(key string) (string, []byte, error) {
 
-	instruction, err := safe_execute("return document.querySelector('#query').textContent", nil)
+	// instruction, err := safe_execute("return document.querySelector('#query').textContent", nil)
 
-	info := []byte(instruction.(string))
+	// info := []byte(instruction.(string))
 
-	return "instruction", info, err
+	reply, err := safe_execute("return core.getDOMInfo();", nil)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	obs, err := json.Marshal(reply)
+
+	return "instruction", obs, err
 
 }
 

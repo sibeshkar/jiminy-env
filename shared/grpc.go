@@ -61,19 +61,19 @@ func (m *GRPCClient) GetReward() (float32, bool, error) {
 	return resp.Reward, resp.Done, nil
 }
 
-func (m *GRPCClient) GetEnvObservation(key string) (string, []byte, error) {
-	resp, err := m.client.GetEnvObservation(context.Background(), &proto.Request{
-		EnvId: key,
-	})
-	if err != nil {
-		return "none", []byte(""), err
-	}
+// func (m *GRPCClient) GetEnvObservation(key string) (string, []byte, error) {
+// 	resp, err := m.client.GetEnvObservation(context.Background(), &proto.Request{
+// 		EnvId: key,
+// 	})
+// 	if err != nil {
+// 		return "none", []byte(""), err
+// 	}
 
-	return resp.Type, resp.Obs, nil
-}
+// 	return resp.Type, resp.Obs, nil
+// }
 
-func (m *GRPCClient) GetEnvInfo(key string) (string, []byte, error) {
-	resp, err := m.client.GetEnvInfo(context.Background(), &proto.Request{
+func (m *GRPCClient) GetEnvObs(key string) (string, []byte, error) {
+	resp, err := m.client.GetEnvObs(context.Background(), &proto.Request{
 		EnvId: key,
 	})
 	if err != nil {
@@ -125,16 +125,16 @@ func (m *GRPCServer) GetReward(
 	return &proto.Reward{Reward: r, Done: d}, err
 }
 
-func (m *GRPCServer) GetEnvObservation(
-	ctx context.Context,
-	req *proto.Request) (*proto.Observation, error) {
-	t, obs, err := m.Impl.GetEnvObservation(req.EnvId)
-	return &proto.Observation{Type: t, Obs: obs}, err
-}
+// func (m *GRPCServer) GetEnvObservation(
+// 	ctx context.Context,
+// 	req *proto.Request) (*proto.Observation, error) {
+// 	t, obs, err := m.Impl.GetEnvObservation(req.EnvId)
+// 	return &proto.Observation{Type: t, Obs: obs}, err
+// }
 
-func (m *GRPCServer) GetEnvInfo(
+func (m *GRPCServer) GetEnvObs(
 	ctx context.Context,
-	req *proto.Request) (*proto.Info, error) {
-	t, info, err := m.Impl.GetEnvInfo(req.EnvId)
-	return &proto.Info{Type: t, Info: info}, err
+	req *proto.Request) (*proto.Obs, error) {
+	t, info, err := m.Impl.GetEnvObs(req.EnvId)
+	return &proto.Obs{Type: t, Info: info}, err
 }

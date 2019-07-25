@@ -24,9 +24,11 @@ func main() {
 	env.Launch(pluginLink)
 
 	time.Sleep(3 * time.Second)
+	env.Reset(pluginLink + "/ClickButton")
+	time.Sleep(6 * time.Second)
 	for {
 		t, obs, err := env.GetEnvInfo("agent_conn.envState.EnvId")
-
+		time.Sleep(100 * time.Millisecond)
 		log.Infof("The type is %v, the obs is %v, error is %v:", t, obs, err)
 	}
 	//env.Reset(pluginLink + "/ClickButton")

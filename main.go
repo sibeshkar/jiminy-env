@@ -213,7 +213,12 @@ mainloop:
 			// 	log.Error(err)
 			// }
 
-			// t, obs, err := env.GetEnvInfo("agent_conn.envState.EnvId")
+			if err := agent_conn.SendEnvObservation(); err != nil {
+				log.Error(err)
+				break mainloop
+			}
+
+			// t, obs, err := env.GetEnvObs("agent_conn.envState.EnvId")
 
 			// log.Infof("The type is %v, the obs is %v, error is %v:", t, obs, err)
 
@@ -525,7 +530,7 @@ func (c *AgentConn) SendEnvReward(reward float32, done bool, info string) error 
 //Protobuf method GetEnvObservation (sent once every 1/fps)
 func (c *AgentConn) SendEnvObservation() error {
 
-	t, obs, err := env.GetEnvObservation(c.envState.EnvId)
+	t, obs, err := env.GetEnvObs(c.envState.EnvId)
 	if err != nil {
 		log.Info(err)
 	}
@@ -559,35 +564,35 @@ func (c *AgentConn) SendEnvObservation() error {
 
 }
 
-func (c *AgentConn) SendEnvInfo() error {
+// func (c *AgentConn) SendEnvInfo() error {
 
-	t, info, err := env.GetEnvInfo(c.envState.EnvId)
-	if err != nil {
-		log.Info(err)
-	}
+// 	t, info, err := env.GetEnvInfo(c.envState.EnvId)
+// 	if err != nil {
+// 		log.Info(err)
+// 	}
 
-	method := "v0.env.info"
+// 	method := "v0.env.info"
 
-	headers := Headers{
-		Sent_at:   float64(time.Now().UnixNano() / 1000000),
-		EpisodeId: c.envState.GetEpisodeId(),
-	}
+// 	headers := Headers{
+// 		Sent_at:   float64(time.Now().UnixNano() / 1000000),
+// 		EpisodeId: c.envState.GetEpisodeId(),
+// 	}
 
-	body := Body{
-		Info:     base64.StdEncoding.EncodeToString(info),
-		InfoType: t,
-	}
+// 	body := Body{
+// 		Info:     base64.StdEncoding.EncodeToString(info),
+// 		InfoType: t,
+// 	}
 
-	m := Message{
-		Method:  method,
-		Headers: headers,
-		Body:    body,
-	}
+// 	m := Message{
+// 		Method:  method,
+// 		Headers: headers,
+// 		Body:    body,
+// 	}
 
-	err = c.SendMessage(m)
-	return err
+// 	err = c.SendMessage(m)
+// 	return err
 
-}
+// }
 
 func (c *AgentConn) SendEnvDescribe() error {
 
@@ -615,54 +620,54 @@ func (c *AgentConn) SendEnvDescribe() error {
 
 }
 
-func DummyObs() {
-	t, obs, err := env.GetEnvObservation("test")
-	if err != nil {
-		log.Info(err)
-	}
+// func DummyObs() {
+// 	t, obs, err := env.GetEnvObservation("test")
+// 	if err != nil {
+// 		log.Info(err)
+// 	}
 
-	// img, _, err := image.Decode(bytes.NewReader(obs))
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
+// 	// img, _, err := image.Decode(bytes.NewReader(obs))
+// 	// if err != nil {
+// 	// 	log.Fatalln(err)
+// 	// }
 
-	// //save the imgByte to file
-	// out, err := os.Create("./QRImg.png")
+// 	// //save the imgByte to file
+// 	// out, err := os.Create("./QRImg.png")
 
-	// if err != nil {
-	// 	log.Info(err)
-	// 	os.Exit(1)
-	// }
+// 	// if err != nil {
+// 	// 	log.Info(err)
+// 	// 	os.Exit(1)
+// 	// }
 
-	// err = png.Encode(out, img)
+// 	// err = png.Encode(out, img)
 
-	// if err != nil {
-	// 	log.Info(err)
-	// 	os.Exit(1)
-	// }
-	//obsString := base64.StdEncoding.EncodeToString(obs)
-	var observation string
-	if t == "image" {
-		observation = base64.StdEncoding.EncodeToString(obs)
-	} else {
-		observation = string(obs)
-	}
-	log.Info("The type is ", t)
-	log.Info("The obs is ", observation)
-}
+// 	// if err != nil {
+// 	// 	log.Info(err)
+// 	// 	os.Exit(1)
+// 	// }
+// 	//obsString := base64.StdEncoding.EncodeToString(obs)
+// 	var observation string
+// 	if t == "image" {
+// 		observation = base64.StdEncoding.EncodeToString(obs)
+// 	} else {
+// 		observation = string(obs)
+// 	}
+// 	log.Info("The type is ", t)
+// 	log.Info("The obs is ", observation)
+// }
 
-func DummyInfo() {
+// func DummyInfo() {
 
-	t, info, err := env.GetEnvInfo("test")
-	if err != nil {
-		log.Info(err)
-	}
+// 	t, info, err := env.GetEnvInfo("test")
+// 	if err != nil {
+// 		log.Info(err)
+// 	}
 
-	infoString := base64.StdEncoding.EncodeToString(info)
-	log.Info("The type is ", t)
-	log.Info("The info is ", infoString)
+// 	infoString := base64.StdEncoding.EncodeToString(info)
+// 	log.Info("The type is ", t)
+// 	log.Info("The info is ", infoString)
 
-}
+// }
 
 // go func() {
 
