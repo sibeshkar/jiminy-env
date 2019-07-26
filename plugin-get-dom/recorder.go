@@ -1,7 +1,7 @@
 package main
 
 import (
-	vnc_rec "github.com/sibeshkar/vncproxy/vnc_rec"
+	vnc_rec "github.com/prannayk/vncproxy/vnc_rec"
 )
 
 func create_vnc_proxy(WsListeningURL string, RecordingDir string, TCPListeningURL string, ProxyVncPassword string, TargetHostname string, TargetPassword string, TargetPort string, ID string) *vnc_rec.VncProxy {

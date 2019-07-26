@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	// "encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -169,17 +169,14 @@ func (Env) GetReward() (float32, bool, error) {
 
 //Misc info to get once every episode
 func (Env) GetEnvObs(key string) (string, []byte, error) {
-
-	// instruction, err := safe_execute("return document.querySelector('#query').textContent", nil)
-
-	// info := []byte(instruction.(string))
-
 	reply, err := safe_execute("return core.getDOMInfo();", nil)
 	if err != nil {
 		fmt.Println(err)
 	}
+	
+	obs, err := process_dom(reply)
 
-	obs, err := json.Marshal(reply)
+	// obs, err := json.Marshal(reply)
 
 	return "dom", obs, err
 
