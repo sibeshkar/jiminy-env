@@ -1,12 +1,14 @@
 package main
 
 import (
+	// "fmt"
 	"encoding/base64"
 	"net/http"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/hashicorp/go-hclog"
@@ -38,6 +40,7 @@ type ClientConfig struct {
 }
 
 type AgentConn struct {
+	wsLock 	 sync.Mutex
 	ws       *websocket.Conn
 	envState *EnvState
 }
@@ -247,7 +250,7 @@ func pluginRPC(pluginObj *shared.PluginConfig) (shared.Env, *plugin.Client) {
 
 	logger := hclog.New(&hclog.LoggerOptions{
 		Output: hclog.DefaultOutput,
-		//Level:  hclog.Trace, //Uncomment this line to get more detailed plugin Trace errors
+		Level:  hclog.Trace, //Uncomment this line to get more detailed plugin Trace errors
 		Name: "plugin",
 	})
 
@@ -317,7 +320,6 @@ func (c *AgentConn) OnMessage() error {
 				client_conf.client.Kill()
 				client_conf.init = false
 			}
-
 			EnvPlugin = shared.CreatePluginConfig(m.Body.EnvId)
 			env, client_conf.client = pluginRPC(&EnvPlugin)
 			client_conf.init = true
@@ -489,6 +491,8 @@ func (c *AgentConn) Close(m *Message) {
 
 //Send a message to connected Agent
 func (c *AgentConn) SendMessage(m Message) error {
+	c.wsLock.Lock()
+	defer c.wsLock.Unlock()
 	err := c.ws.WriteJSON(&m)
 	if err != nil {
 		log.Println("write:", err)
@@ -529,8 +533,8 @@ func (c *AgentConn) SendEnvReward(reward float32, done bool, info string) error 
 // }
 //Protobuf method GetEnvObservation (sent once every 1/fps)
 func (c *AgentConn) SendEnvObservation() error {
-
 	t, obs, err := env.GetEnvObs(c.envState.EnvId)
+	log.Info(t, obs)
 	if err != nil {
 		log.Info(err)
 	}

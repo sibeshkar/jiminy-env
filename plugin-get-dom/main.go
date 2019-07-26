@@ -175,9 +175,6 @@ func (Env) GetEnvObs(key string) (string, []byte, error) {
 	}
 	
 	obs, err := process_dom(reply)
-
-	// obs, err := json.Marshal(reply)
-
 	return "dom", obs, err
 
 }
