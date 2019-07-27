@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 	"time"
 	"sync"
@@ -255,14 +256,26 @@ func pluginRPC(pluginObj *shared.PluginConfig) (shared.Env, *plugin.Client) {
 	})
 
 	// We're a host. Start by launching the plugin process.
-	client := plugin.NewClient(&plugin.ClientConfig{
+	cfg := &plugin.ClientConfig{
 		HandshakeConfig: shared.Handshake,
 		Plugins:         shared.PluginMap,
 		Cmd:             exec.Command("sh", "-c", pluginObj.BinaryFile),
 		AllowedProtocols: []plugin.Protocol{
 			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
 		Logger: logger,
-	})
+	}
+	client := plugin.NewClient(cfg)
+
+	go func () {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+
+		<-c 
+		err := cfg.Cmd.Process.Kill()
+		if err != nil {
+			log.Fatalf("Process exit failed: %v", err)
+		}
+	} ()
 	// defer client.Kill()
 
 	// Connect via RPC

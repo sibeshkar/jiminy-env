@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 
 	"github.com/hashicorp/go-plugin"
@@ -27,13 +28,21 @@ var (
 // the key name and the contents are the value of the key.
 type Env struct{}
 
+func ExitOnInterrupt (cmd *exec.Cmd) {
+	go func () {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		<-c
+		if err := cmd.Process.Kill() ; err != nil {
+			log.Fatalf("Cmd: %v was not able to exit: %v", cmd, err)
+		}
+	} ()
+}
+
 //Init function contains all the ancilliary services, like static file servers, VNC servers, OBS websocket etc that are initialized
 //before the actual environment runtime (say a browser) starts. Important : they are background services that need to run concurrently to the main runtime.
 //Can also run pre-flight checks here.
 func (Env) Init(key string) (string, error) {
-	//http://127.0.0.1:3000/miniwob/bisect-angle.html
-	//cmd := exec.Command("sh", "-c", shared.UserHomeDir()+"/"+".jiminy/plugins/"+key+"/vendor/boxware-tigervnc", "&")
-	//cmd.Start()
 	var err error
 	if os.Getenv("DISPLAY") == "" {
 		os.Setenv("DISPLAY", ":0")
@@ -42,11 +51,13 @@ func (Env) Init(key string) (string, error) {
 		if err != nil {
 			log.Fatalf("cmd.Run() failed with %s\n", err)
 		}
+		ExitOnInterrupt(cmd)
 		cmd = exec.Command("/bin/bash", "-c", shared.UserHomeDir()+"/"+".jiminy/plugins/"+key+"/vendor/boxware-tigervnc", "&")
 		err = cmd.Start()
 		if err != nil {
 			log.Fatalf("cmd.Run() failed with %s\n", err)
 		}
+		ExitOnInterrupt(cmd)
 	}
 
 	recordingDir := shared.UserHomeDir() + "/" + ".jiminy/plugins/" + key + "/recordings/"

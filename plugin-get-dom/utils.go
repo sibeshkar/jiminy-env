@@ -142,14 +142,7 @@ func tagInObjectList(tag string, text interface{}) bool {
 }
 
 func process_dom(json interface{}) ([]byte, error) {
-	json_object, ok := json.(map[string]interface{})
-	if !ok {
-		return nil, TypeAssertionToJSONFailedError 
-	}
-	if _, ok := json_object["value"] ; !ok {
-		return nil, DomTagPropertyModeFailure
-	}
-	betadom_object_list, err := dom_to_betadom(json_object["value"])
+	betadom_object_list, err := dom_to_betadom(json)
 	if err != nil {
 		return nil,err
 	}
