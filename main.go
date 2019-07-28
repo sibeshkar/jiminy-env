@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -38,6 +39,7 @@ type ClientConfig struct {
 }
 
 type AgentConn struct {
+	wsLock   sync.Mutex
 	ws       *websocket.Conn
 	envState *EnvState
 }
@@ -192,21 +194,49 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	var lastdone bool = true
 
+	t0 := time.Now()
+	var n float32 = 0.0
+
 mainloop:
 	for {
+		n += 1.0
+		t := t0.Add(time.Duration(n*1000/agent_conn.envState.Fps) * time.Millisecond)
+		dt := t.Sub(time.Now())
+		//log.Infof("n:%v, t: %v, t0: %v, dt: %v", n, t, t0, dt)
 
-		switch agent_conn.envState.EnvStatus {
+		if dt > 0 {
+			if dt >= time.Duration(1*time.Second) {
+				log.Infof("Sleeping for %v", dt)
+			}
+			//log.Infof("Sleeping for %v", dt)
+			time.Sleep(dt)
+		} else {
+			log.Infof("Rewarder falling behind %v", dt)
+
+		}
+		switch agent_conn.envState.GetEnvStatus() {
 		case "launching":
 			log.Info("Env is still launching")
-			time.Sleep(100 * time.Microsecond)
+			//time.Sleep(20 * time.Microsecond)
 		case "resetting":
 			log.Info("Env is resetting to task")
-			time.Sleep(100 * time.Microsecond)
+			//time.Sleep(20 * time.Microsecond)
 		case "running":
 			reward, done, _ := env.GetReward()
-			if err := agent_conn.SendEnvReward(reward, done, `{}`); err != nil {
-				log.Error(err)
-				break mainloop
+
+			//log.Infof("reward:%v, done: %v", reward, done)
+
+			if reward != 0.0 {
+				if !done {
+					log.Infof("Done is not true")
+					done = true
+				}
+				log.Infof("The reward is %v, the done is %v", reward, done)
+				if err := agent_conn.SendEnvReward(reward, done, `{}`); err != nil {
+					log.Error(err)
+					break mainloop
+				}
+
 			}
 
 			// if err := agent_conn.SendEnvObservation(); err != nil {
@@ -223,13 +253,17 @@ mainloop:
 			// log.Infof("The type is %v, the obs is %v, error is %v:", t, obs, err)
 
 			if done != lastdone {
-				if done {
-					go agent_conn.Reset()
+				if reward != 0.0 || done {
+					currEpisode := agent_conn.envState.GetEpisodeId()
+					agent_conn.envState.SetEpisodeId(currEpisode + 1)
 					log.Info("Environment is resetting to task again")
-					agent_conn.envState.SetEpisodeId(agent_conn.envState.GetEpisodeId() + 1)
-					log.Info("Episode ID is ", agent_conn.envState.GetEpisodeId())
+					agent_conn.Reset()
+					log.Info("Episode ID is ", currEpisode+1)
+					agent_conn.SendEnvDescribe()
+					n = 0.0
+					t0 = time.Now()
 				} else {
-					log.Info("Environment is running")
+					log.Info("Environment is running again")
 				}
 
 			}
@@ -237,7 +271,7 @@ mainloop:
 			lastdone = done
 		}
 
-		time.Sleep(time.Duration(1000/agent_conn.envState.Fps) * time.Millisecond)
+		//time.Sleep(time.Duration(1000/agent_conn.envState.Fps) * time.Millisecond)
 	}
 
 }
@@ -475,6 +509,7 @@ func (c *AgentConn) Reset() {
 	}
 
 	c.envState.SetEnvStatus("running")
+	//c.SendEnvDescribe()
 
 }
 
@@ -489,6 +524,8 @@ func (c *AgentConn) Close(m *Message) {
 
 //Send a message to connected Agent
 func (c *AgentConn) SendMessage(m Message) error {
+	c.wsLock.Lock()
+	defer c.wsLock.Unlock()
 	err := c.ws.WriteJSON(&m)
 	if err != nil {
 		log.Println("write:", err)

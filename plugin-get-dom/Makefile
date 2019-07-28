@@ -2,7 +2,7 @@
 GOCMD=go
 GOBUILD=$(GOCMD) build
 ENV_PLUGIN_BINARY_NAME=wob
-TAG=v0
+TAG=v1
 TASK_CONFIG=tasks.json
 
 all:build
