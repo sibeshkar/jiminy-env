@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"bytes"
 
 	"github.com/gorilla/websocket"
 	"github.com/hashicorp/go-hclog"
@@ -588,7 +589,7 @@ func (c *AgentConn) SendEnvObservation() error {
 	if t == "image" {
 		observation = base64.StdEncoding.EncodeToString(obs)
 	} else {
-		observation = string(obs)
+		observation = bytes.NewBuffer(obs).String()
 	}
 
 	method := "v0.env.observation"
