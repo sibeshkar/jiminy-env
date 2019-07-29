@@ -12,8 +12,8 @@ COPY ./jiminy /usr/bin/
 COPY ./plugin-go-grpc/wob-v0.zip /app/
 COPY ./plugin-get-dom/wob-v1.zip /app/
 
-#RUN jiminy install /app/wob-v0.zip
-#CMD ["jiminy", "run"]
+# RUN jiminy install /app/wob-v0.zip && jiminy install /app/wob-v1.zip
+# CMD ["jiminy", "run"]
 
 WORKDIR /app
 CMD ["/bin/bash"]

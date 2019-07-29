@@ -4,19 +4,27 @@ Jiminy internal communication protocols
 Use Plugin based system
 ====================
 
-```sh
-# This builds the main CLI
-$ go build -o env
+Here's the instructions to run this : 
 
-# This builds the plugin written in Go
-$ go build -o env-go-grpc ./plugin-go-grpc
+1. Git clone `github.com/sibeshkar/jiminy-env`
+2. Run : `make docker-run-d` to run detached mode
+3. Install jiminy from `github.com/sibeshkar/jiminy`, mods branch
+5. Outside container, run: `python misc/wob_new_dom.py`
 
-# This tells the ENV binary to use the "env-go-grpc" binary
-$ export ENV_PLUGIN="./env-go-grpc"
+To debug inside container:
 
-# Server
-$ ./env
-```
+1. Git clone `github.com/sibeshkar/jiminy-env`
+2. Run : `make docker-run` to run interactive mode
+3. In the container run : `jiminy install wob-v0.zip`
+4. After installing plugin, run:  `jiminy run sibeshkar/wob-v0`
+5. Outside container, run: `python misc/wob_new_dom.py`
+
+Compiling:
+1. `make docker` to compile env base, plugin-1 and plugin-2, and make docker image $VERSION
+2. `make plugin-v1` to plugin-1
+3. `make plugin-v2` to plugin-2
+
+See Makefile for more commands. 
 
 Update protobuf definition : 
 

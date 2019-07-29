@@ -51,6 +51,15 @@ docker:
 	jiminy zip plugin-get-dom/
 	docker build . -t sibeshkar/jiminy-env:$(VERSION) --force-rm
 
+docker-d:
+	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(PLUGIN_FOLDER_1)/$(PLUGIN_BINARY_NAME_1) -v $(PLUGIN_FOLDER_1)
+	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(PLUGIN_FOLDER_2)/$(PLUGIN_BINARY_NAME_2) -v $(PLUGIN_FOLDER_2)
+	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(CONTROLLER_BINARY_NAME) -v
+	jiminy zip plugin-go-grpc/
+	jiminy zip plugin-get-dom/
+	docker build . -t sibeshkar/jiminy-env:detached -f Dockerfile.detached --force-rm
+
+
 docker-run:
 	docker run -it --rm -p 5901:5901 -p 15901:15900 sibeshkar/jiminy-env:$(VERSION)
 

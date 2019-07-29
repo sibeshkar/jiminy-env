@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -42,11 +41,13 @@ func (Env) Init(key string) (string, error) {
 		if err != nil {
 			log.Fatalf("cmd.Run() failed with %s\n", err)
 		}
+		ExitOnInterrupt(cmd)
 		cmd = exec.Command("/bin/bash", "-c", shared.UserHomeDir()+"/"+".jiminy/plugins/"+key+"/vendor/boxware-tigervnc", "&")
 		err = cmd.Start()
 		if err != nil {
 			log.Fatalf("cmd.Run() failed with %s\n", err)
 		}
+		ExitOnInterrupt(cmd)
 	}
 
 	recordingDir := shared.UserHomeDir() + "/" + ".jiminy/plugins/" + key + "/recordings/"
@@ -179,7 +180,7 @@ func (Env) GetEnvObs(key string) (string, []byte, error) {
 		fmt.Println(err)
 	}
 
-	obs, err := json.Marshal(reply)
+	obs, err := process_dom(reply)
 
 	return "dom", obs, err
 
