@@ -36,3 +36,7 @@ func serve_static(link string) {
 	http.ListenAndServe(":3000", nil)
 
 }
+
+func process_dom(b []byte) ([]byte, error) {
+	return b, nil
+}

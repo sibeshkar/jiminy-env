@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -38,6 +40,7 @@ type ClientConfig struct {
 }
 
 type AgentConn struct {
+	wsLock   sync.Mutex
 	ws       *websocket.Conn
 	envState *EnvState
 }
@@ -192,36 +195,76 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	var lastdone bool = true
 
+	t0 := time.Now()
+	var n float32 = 0.0
+
 mainloop:
 	for {
+		n += 1.0
+		t := t0.Add(time.Duration(n*1000/agent_conn.envState.Fps) * time.Millisecond)
+		dt := t.Sub(time.Now())
+		//log.Infof("n:%v, t: %v, t0: %v, dt: %v", n, t, t0, dt)
 
-		switch agent_conn.envState.EnvStatus {
+		if dt > 0 {
+			if dt >= time.Duration(1*time.Second) {
+				log.Infof("Sleeping for %v", dt)
+			}
+			//log.Infof("Sleeping for %v", dt)
+			time.Sleep(dt)
+		} else {
+			log.Infof("Rewarder falling behind %v", dt)
+
+		}
+		switch agent_conn.envState.GetEnvStatus() {
 		case "launching":
 			log.Info("Env is still launching")
-			time.Sleep(100 * time.Microsecond)
+			//time.Sleep(20 * time.Microsecond)
 		case "resetting":
 			log.Info("Env is resetting to task")
-			time.Sleep(100 * time.Microsecond)
+			//time.Sleep(20 * time.Microsecond)
 		case "running":
 			reward, done, _ := env.GetReward()
-			if err := agent_conn.SendEnvReward(reward, done, `{}`); err != nil {
-				log.Error(err)
-				break mainloop
+
+			//log.Infof("reward:%v, done: %v", reward, done)
+
+			if reward != 0.0 {
+				if !done {
+					log.Infof("Done is not true")
+					done = true
+				}
+				log.Infof("The reward is %v, the done is %v", reward, done)
+				if err := agent_conn.SendEnvReward(reward, done, `{}`); err != nil {
+					log.Error(err)
+					break mainloop
+				}
+
 			}
 
-			//Muted this temporarily
 			// if err := agent_conn.SendEnvObservation(); err != nil {
 			// 	log.Error(err)
 			// }
 
+			if err := agent_conn.SendEnvObservation(); err != nil {
+				log.Error(err)
+				break mainloop
+			}
+
+			// t, obs, err := env.GetEnvObs("agent_conn.envState.EnvId")
+
+			// log.Infof("The type is %v, the obs is %v, error is %v:", t, obs, err)
+
 			if done != lastdone {
-				if done {
-					go agent_conn.Reset()
+				if reward != 0.0 || done {
+					currEpisode := agent_conn.envState.GetEpisodeId()
+					agent_conn.envState.SetEpisodeId(currEpisode + 1)
 					log.Info("Environment is resetting to task again")
-					agent_conn.envState.SetEpisodeId(agent_conn.envState.GetEpisodeId() + 1)
-					log.Info("Episode ID is ", agent_conn.envState.GetEpisodeId())
+					agent_conn.Reset()
+					log.Info("Episode ID is ", currEpisode+1)
+					agent_conn.SendEnvDescribe()
+					n = 0.0
+					t0 = time.Now()
 				} else {
-					log.Info("Environment is running")
+					log.Info("Environment is running again")
 				}
 
 			}
@@ -229,7 +272,7 @@ mainloop:
 			lastdone = done
 		}
 
-		time.Sleep(time.Duration(1000/agent_conn.envState.Fps) * time.Millisecond)
+		//time.Sleep(time.Duration(1000/agent_conn.envState.Fps) * time.Millisecond)
 	}
 
 }
@@ -244,14 +287,26 @@ func pluginRPC(pluginObj *shared.PluginConfig) (shared.Env, *plugin.Client) {
 	})
 
 	// We're a host. Start by launching the plugin process.
-	client := plugin.NewClient(&plugin.ClientConfig{
+	cfg := &plugin.ClientConfig{
 		HandshakeConfig: shared.Handshake,
 		Plugins:         shared.PluginMap,
 		Cmd:             exec.Command("sh", "-c", pluginObj.BinaryFile),
 		AllowedProtocols: []plugin.Protocol{
 			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
 		Logger: logger,
-	})
+	}
+	client := plugin.NewClient(cfg)
+
+	go func() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+
+		<-c
+		err := cfg.Cmd.Process.Kill()
+		if err != nil {
+			log.Fatalf("Process exit failed: %v", err)
+		}
+	}()
 	// defer client.Kill()
 
 	// Connect via RPC
@@ -467,6 +522,7 @@ func (c *AgentConn) Reset() {
 	}
 
 	c.envState.SetEnvStatus("running")
+	//c.SendEnvDescribe()
 
 }
 
@@ -481,6 +537,8 @@ func (c *AgentConn) Close(m *Message) {
 
 //Send a message to connected Agent
 func (c *AgentConn) SendMessage(m Message) error {
+	c.wsLock.Lock()
+	defer c.wsLock.Unlock()
 	err := c.ws.WriteJSON(&m)
 	if err != nil {
 		log.Println("write:", err)
@@ -522,7 +580,7 @@ func (c *AgentConn) SendEnvReward(reward float32, done bool, info string) error 
 //Protobuf method GetEnvObservation (sent once every 1/fps)
 func (c *AgentConn) SendEnvObservation() error {
 
-	t, obs, err := env.GetEnvObservation(c.envState.EnvId)
+	t, obs, err := env.GetEnvObs(c.envState.EnvId)
 	if err != nil {
 		log.Info(err)
 	}
@@ -556,35 +614,35 @@ func (c *AgentConn) SendEnvObservation() error {
 
 }
 
-func (c *AgentConn) SendEnvInfo() error {
+// func (c *AgentConn) SendEnvInfo() error {
 
-	t, info, err := env.GetEnvInfo(c.envState.EnvId)
-	if err != nil {
-		log.Info(err)
-	}
+// 	t, info, err := env.GetEnvInfo(c.envState.EnvId)
+// 	if err != nil {
+// 		log.Info(err)
+// 	}
 
-	method := "v0.env.info"
+// 	method := "v0.env.info"
 
-	headers := Headers{
-		Sent_at:   float64(time.Now().UnixNano() / 1000000),
-		EpisodeId: c.envState.GetEpisodeId(),
-	}
+// 	headers := Headers{
+// 		Sent_at:   float64(time.Now().UnixNano() / 1000000),
+// 		EpisodeId: c.envState.GetEpisodeId(),
+// 	}
 
-	body := Body{
-		Info:     base64.StdEncoding.EncodeToString(info),
-		InfoType: t,
-	}
+// 	body := Body{
+// 		Info:     base64.StdEncoding.EncodeToString(info),
+// 		InfoType: t,
+// 	}
 
-	m := Message{
-		Method:  method,
-		Headers: headers,
-		Body:    body,
-	}
+// 	m := Message{
+// 		Method:  method,
+// 		Headers: headers,
+// 		Body:    body,
+// 	}
 
-	err = c.SendMessage(m)
-	return err
+// 	err = c.SendMessage(m)
+// 	return err
 
-}
+// }
 
 func (c *AgentConn) SendEnvDescribe() error {
 
@@ -612,54 +670,54 @@ func (c *AgentConn) SendEnvDescribe() error {
 
 }
 
-func DummyObs() {
-	t, obs, err := env.GetEnvObservation("test")
-	if err != nil {
-		log.Info(err)
-	}
+// func DummyObs() {
+// 	t, obs, err := env.GetEnvObservation("test")
+// 	if err != nil {
+// 		log.Info(err)
+// 	}
 
-	// img, _, err := image.Decode(bytes.NewReader(obs))
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
+// 	// img, _, err := image.Decode(bytes.NewReader(obs))
+// 	// if err != nil {
+// 	// 	log.Fatalln(err)
+// 	// }
 
-	// //save the imgByte to file
-	// out, err := os.Create("./QRImg.png")
+// 	// //save the imgByte to file
+// 	// out, err := os.Create("./QRImg.png")
 
-	// if err != nil {
-	// 	log.Info(err)
-	// 	os.Exit(1)
-	// }
+// 	// if err != nil {
+// 	// 	log.Info(err)
+// 	// 	os.Exit(1)
+// 	// }
 
-	// err = png.Encode(out, img)
+// 	// err = png.Encode(out, img)
 
-	// if err != nil {
-	// 	log.Info(err)
-	// 	os.Exit(1)
-	// }
-	//obsString := base64.StdEncoding.EncodeToString(obs)
-	var observation string
-	if t == "image" {
-		observation = base64.StdEncoding.EncodeToString(obs)
-	} else {
-		observation = string(obs)
-	}
-	log.Info("The type is ", t)
-	log.Info("The obs is ", observation)
-}
+// 	// if err != nil {
+// 	// 	log.Info(err)
+// 	// 	os.Exit(1)
+// 	// }
+// 	//obsString := base64.StdEncoding.EncodeToString(obs)
+// 	var observation string
+// 	if t == "image" {
+// 		observation = base64.StdEncoding.EncodeToString(obs)
+// 	} else {
+// 		observation = string(obs)
+// 	}
+// 	log.Info("The type is ", t)
+// 	log.Info("The obs is ", observation)
+// }
 
-func DummyInfo() {
+// func DummyInfo() {
 
-	t, info, err := env.GetEnvInfo("test")
-	if err != nil {
-		log.Info(err)
-	}
+// 	t, info, err := env.GetEnvInfo("test")
+// 	if err != nil {
+// 		log.Info(err)
+// 	}
 
-	infoString := base64.StdEncoding.EncodeToString(info)
-	log.Info("The type is ", t)
-	log.Info("The info is ", infoString)
+// 	infoString := base64.StdEncoding.EncodeToString(info)
+// 	log.Info("The type is ", t)
+// 	log.Info("The info is ", infoString)
 
-}
+// }
 
 // go func() {
 
