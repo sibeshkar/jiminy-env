@@ -66,6 +66,11 @@ docker-run:
 docker-run-d:
 	docker run -it --rm -p 5901:5901 -p 15901:15900 sibeshkar/jiminy-env:detached
 
+docker-push:
+	docker push sibeshkar/jiminy-env:$(VERSION)
+	docker push sibeshkar/jiminy-env:detached
+
+
 # Cross compilation
 build-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_UNIX) -v
