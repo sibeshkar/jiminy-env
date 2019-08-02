@@ -65,6 +65,8 @@ func (Env) Init(key string) (string, error) {
 //Launch function contains the code to launch and handle the main environment runtime(say a browser).
 func (Env) Launch(key string) (string, error) {
 
+	log.Println("Launching stuff")
+
 	pluginConfig = shared.CreatePluginConfig(key)
 
 	var (

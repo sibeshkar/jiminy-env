@@ -2,6 +2,8 @@ package main
 
 import (
 	"net/http"
+	// "fmt"
+	"bytes"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -57,7 +59,7 @@ type Body struct {
 	Fps       float32 `json:"fps"`
 	Reward    float32 `json:"reward"`
 	Done      bool    `json:"done"`
-	Obs       []byte  `json:"observation"`
+	Obs       string  `json:"observation"`
 	ObsType   string  `json:"observation_type"`
 	Info      string  `json:"info"`
 	InfoType  string  `json:"info_type"`
@@ -583,7 +585,7 @@ func (c *AgentConn) SendEnvObservation() error {
 	if err != nil {
 		log.Info(err)
 	}
-	observation := obs
+	observation := bytes.NewBuffer(obs).String()
 	// if t == "image" {
 	// 	observation := base64.StdEncoding.EncodeToString(obs)
 	// } else {
