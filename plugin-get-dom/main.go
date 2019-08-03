@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-plugin"
 	"github.com/sibeshkar/jiminy-env/shared"
@@ -80,6 +81,10 @@ func (Env) Launch(key string) (string, error) {
 	}
 
 	selenium.SetDebug(true)
+	for os.Getenv("DISPLAY") == "" {
+		time.Sleep(100 * time.Millisecond)
+
+	}
 	service, err = selenium.NewSeleniumService(seleniumPath, port, opts...)
 	if err != nil {
 		panic(err)

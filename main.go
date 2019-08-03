@@ -154,7 +154,7 @@ func RunPlugin(pluginLink string) {
 	client_conf.init = true
 	//TODO: client.Kill() before ending process, otherwise there are zombie plugin processes
 	go env.Init(pluginLink)
-	time.Sleep(2 * time.Second)
+	//time.Sleep(2 * time.Second)
 	env.Launch(pluginLink)
 	log.Info("Running websocket server...")
 	http.HandleFunc("/", handler)
@@ -179,7 +179,7 @@ func RunPluginTask(pluginLink string) {
 	client_conf.init = true
 	//TODO: client.Kill() before ending process, otherwise there are zombie plugin processes
 	go env.Init(envPluginLink)
-	time.Sleep(2 * time.Second)
+	//time.Sleep(2 * time.Second)
 
 	for {
 		_, err := env.Launch(envPluginLink)
@@ -420,7 +420,7 @@ func (c *AgentConn) InitLaunch(m *Message) {
 	log.Info("launch message received: %s\n", m.Body.EnvId)
 	c.envState.SetEnvStatus("launching")
 	go env.Init(m.Body.EnvId)
-	time.Sleep(2 * time.Second)
+	//time.Sleep(2 * time.Second)
 	result, err := env.Launch(m.Body.EnvId)
 	if err != nil {
 		log.Info("error during launch: \n", err)
