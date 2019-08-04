@@ -49,13 +49,13 @@ func (Env) Init(key string) (string, error) {
 		}
 	}
 
-	recordingDir := shared.UserHomeDir() + "/" + ".jiminy/plugins/" + key + "/recordings/"
+	// recordingDir := shared.UserHomeDir() + "/" + ".jiminy/plugins/" + key + "/recordings/"
 
-	os.MkdirAll(recordingDir, os.ModePerm)
+	// os.MkdirAll(recordingDir, os.ModePerm)
 
-	proxy := create_vnc_proxy("", recordingDir, ":5901", "boxware", "localhost", "boxware", "5900", "dummyDesk")
+	// proxy := create_vnc_proxy("", recordingDir, ":5901", "boxware", "localhost", "boxware", "5900", "dummyDesk")
 
-	go proxy.StartListening()
+	// go proxy.StartListening()
 
 	serve_static(key)
 	return "env is initialized:" + key, err

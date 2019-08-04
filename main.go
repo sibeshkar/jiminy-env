@@ -272,7 +272,6 @@ mainloop:
 					log.Error(err)
 					break mainloop
 				}
-
 			}
 
 			// if err := agent_conn.SendEnvObservation(); err != nil {
@@ -289,17 +288,18 @@ mainloop:
 			// log.Infof("The type is %v, the obs is %v, error is %v:", t, obs, err)
 
 			if done != lastdone {
-				if reward != 0.0 || done {
+				if done == true || lastdone == false {
 					currEpisode := agent_conn.envState.GetEpisodeId()
 					agent_conn.envState.SetEpisodeId(currEpisode + 1)
 					log.Info("Environment is resetting to task again")
 					agent_conn.Reset()
-					log.Info("Episode ID is ", currEpisode+1)
+
+				} else if done == false || lastdone == true {
+					currEpisode := agent_conn.envState.GetEpisodeId()
+					log.Info("Episode ID is ", currEpisode)
 					agent_conn.SendEnvDescribe()
 					n = 0.0
 					t0 = time.Now()
-				} else {
-					log.Info("Environment is running again")
 				}
 
 			}
@@ -317,8 +317,8 @@ func pluginRPC(pluginObj *shared.PluginConfig) (shared.Env, *plugin.Client) {
 
 	logger := hclog.New(&hclog.LoggerOptions{
 		Output: hclog.DefaultOutput,
-		Level:  hclog.Trace, //Uncomment this line to get more detailed plugin Trace errors
-		Name:   "plugin",
+		//Level:  hclog.Trace, //Uncomment this line to get more detailed plugin Trace errors
+		Name: "plugin",
 	})
 
 	// We're a host. Start by launching the plugin process.

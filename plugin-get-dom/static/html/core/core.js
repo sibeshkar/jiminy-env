@@ -70,6 +70,7 @@ core.ept0 = null; // stores system time when episode begins (so we can time it)
 core.cover_div = null; // cover div for synchronization
 
 core.startEpisode = function() {
+  //WOB_DONE_GLOBAL = false;
   core.createDisplay();
   if (core.cover_div == null) {
     core.cover_div = document.createElement('div');
@@ -134,12 +135,12 @@ core.endEpisode = function(reward, time_proportional, reason) {
 
   // start a new problem with a new timer. add a slight delay so that the problem
   // isn't generated immediately, which can lead to accidental clicking.
-  //setTimeout(function(){
-  //  core.startEpisode();
-  //}, 500);
+  setTimeout(function(){
+   core.startEpisode();
+  }, 500);
 
   // With the sync screen, the timeout above is redundant
-  core.startEpisode();
+  // core.startEpisode();
 }
 
 // returns parameters passed in the url.

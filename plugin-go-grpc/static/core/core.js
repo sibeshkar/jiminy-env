@@ -85,6 +85,7 @@ core.endEpisode = function(reward, time_proportional) {
   }
   var ept1 = new Date().getTime(); // get system time
 
+  
   // adjust reward based on time, so acting early is encouraged
   if(typeof time_proportional === 'undefined') { time_proportional = false; }
   if(time_proportional) {

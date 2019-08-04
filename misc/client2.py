@@ -29,7 +29,7 @@ class RewarderProtocol(WebSocketClientProtocol):
         payload_launch = {
             'method' : 'v0.env.launch',
             'body' : {
-                'env_id' : 'sibeshkar/wob-v0',
+                'env_id' : 'sibeshkar/wob-v1',
                 'fps' : 30
             }
         }
@@ -38,7 +38,7 @@ class RewarderProtocol(WebSocketClientProtocol):
         payload_reset = {
             'method' : 'v0.env.reset',
             'body' : {
-                'env_id' : 'sibeshkar/wob-v0/ClickButton'
+                'env_id' : 'sibeshkar/wob-v1/ClickButton'
             }
         }
 

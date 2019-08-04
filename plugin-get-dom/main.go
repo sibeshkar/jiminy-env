@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -51,13 +52,13 @@ func (Env) Init(key string) (string, error) {
 		ExitOnInterrupt(cmd)
 	}
 
-	recordingDir := shared.UserHomeDir() + "/" + ".jiminy/plugins/" + key + "/recordings/"
+	// recordingDir := shared.UserHomeDir() + "/" + ".jiminy/plugins/" + key + "/recordings/"
 
-	os.MkdirAll(recordingDir, os.ModePerm)
+	// os.MkdirAll(recordingDir, os.ModePerm)
 
-	proxy := create_vnc_proxy("", recordingDir, ":5901", "boxware", "localhost", "boxware", "5900", "dummyDesk")
+	// proxy := create_vnc_proxy("", recordingDir, ":5901", "boxware", "localhost", "boxware", "5900", "dummyDesk")
 
-	go proxy.StartListening()
+	// go proxy.StartListening()
 
 	serve_static(key)
 	return "env is initialized:" + key, err
@@ -65,6 +66,12 @@ func (Env) Init(key string) (string, error) {
 
 //Launch function contains the code to launch and handle the main environment runtime(say a browser).
 func (Env) Launch(key string) (string, error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("stacktrace from panic: \n" + string(debug.Stack()))
+		}
+	}()
 
 	pluginConfig = shared.CreatePluginConfig(key)
 
@@ -105,6 +112,12 @@ func (Env) Launch(key string) (string, error) {
 //Reset handles resetting to a certain task of the environment. Tasks lists in tasks.go.
 //Handler functions can be written as to how handle each task best.
 func (Env) Reset(key string) (string, error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("stacktrace from panic: \n" + string(debug.Stack()))
+		}
+	}()
 
 	var envString []string = strings.Split(key, "/")
 
