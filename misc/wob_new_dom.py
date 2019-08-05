@@ -30,6 +30,8 @@ if __name__ == "__main__":
         print("Reward", reward)
         print("Is done", is_done)
         print("Info", info)
+        if is_done[0]:
+            time.sleep(0.5)
         env.render()
 
 

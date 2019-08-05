@@ -1,12 +1,15 @@
 package main
 
 import (
+	"encoding/base64"
+	"fmt"
 	"net/http"
 	// "fmt"
 	"bytes"
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -140,6 +143,12 @@ func main() {
 
 func RunPlugin(pluginLink string) {
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("stacktrace from panic: \n" + string(debug.Stack()))
+		}
+	}()
+
 	log.Info("Running environment: ", pluginLink)
 
 	EnvPlugin = shared.CreatePluginConfig(pluginLink)
@@ -147,6 +156,7 @@ func RunPlugin(pluginLink string) {
 	client_conf.init = true
 	//TODO: client.Kill() before ending process, otherwise there are zombie plugin processes
 	go env.Init(pluginLink)
+	//time.Sleep(2 * time.Second)
 	env.Launch(pluginLink)
 	log.Info("Running websocket server...")
 	http.HandleFunc("/", handler)
@@ -155,6 +165,11 @@ func RunPlugin(pluginLink string) {
 }
 
 func RunPluginTask(pluginLink string) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("stacktrace from panic: \n" + string(debug.Stack()))
+		}
+	}()
 
 	s := strings.Split(pluginLink, "/")
 
@@ -166,10 +181,26 @@ func RunPluginTask(pluginLink string) {
 	client_conf.init = true
 	//TODO: client.Kill() before ending process, otherwise there are zombie plugin processes
 	go env.Init(envPluginLink)
-	env.Launch(envPluginLink)
+	//time.Sleep(2 * time.Second)
 
-	log.Info("Resetting to task: ", pluginLink)
-	env.Reset(pluginLink)
+	for {
+		_, err := env.Launch(envPluginLink)
+		if err != nil {
+			log.Errorf("Error while launching %v ", err)
+			break
+		}
+		//time.Sleep(2 * time.Second)
+
+		log.Info("Resetting to task: ", pluginLink)
+		_, err = env.Reset(pluginLink)
+		if err != nil {
+			log.Errorf("Error while resetting %v ", err)
+		} else {
+			break
+		}
+		//time.Sleep(1 * time.Second)
+
+	}
 
 	log.Info("Running websocket server...")
 	http.HandleFunc("/", handler)
@@ -178,6 +209,11 @@ func RunPluginTask(pluginLink string) {
 }
 
 func RunEmpty() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("stacktrace from panic: \n" + string(debug.Stack()))
+		}
+	}()
 
 	http.HandleFunc("/", handler)
 	log.Fatal(http.ListenAndServe(":15900", nil))
@@ -238,7 +274,6 @@ mainloop:
 					log.Error(err)
 					break mainloop
 				}
-
 			}
 
 			// if err := agent_conn.SendEnvObservation(); err != nil {
@@ -255,17 +290,18 @@ mainloop:
 			// log.Infof("The type is %v, the obs is %v, error is %v:", t, obs, err)
 
 			if done != lastdone {
-				if reward != 0.0 || done {
+				if done == true || lastdone == false {
 					currEpisode := agent_conn.envState.GetEpisodeId()
 					agent_conn.envState.SetEpisodeId(currEpisode + 1)
 					log.Info("Environment is resetting to task again")
 					agent_conn.Reset()
-					log.Info("Episode ID is ", currEpisode+1)
+
+				} else if done == false || lastdone == true {
+					currEpisode := agent_conn.envState.GetEpisodeId()
+					log.Info("Episode ID is ", currEpisode)
 					agent_conn.SendEnvDescribe()
 					n = 0.0
 					t0 = time.Now()
-				} else {
-					log.Info("Environment is running again")
 				}
 
 			}
@@ -386,6 +422,7 @@ func (c *AgentConn) InitLaunch(m *Message) {
 	log.Info("launch message received: %s\n", m.Body.EnvId)
 	c.envState.SetEnvStatus("launching")
 	go env.Init(m.Body.EnvId)
+	//time.Sleep(2 * time.Second)
 	result, err := env.Launch(m.Body.EnvId)
 	if err != nil {
 		log.Info("error during launch: \n", err)
@@ -561,7 +598,7 @@ func (c *AgentConn) SendEnvReward(reward float32, done bool, info string) error 
 		Reward: reward,
 		Done:   done,
 		Info:   info,
-	}
+	}   
 
 	m := Message{
 		Method:  method,
@@ -586,6 +623,7 @@ func (c *AgentConn) SendEnvObservation() error {
 		log.Info(err)
 	}
 	observation := bytes.NewBuffer(obs).String()
+ 
 	// if t == "image" {
 	// 	observation := base64.StdEncoding.EncodeToString(obs)
 	// } else {
@@ -670,107 +708,3 @@ func (c *AgentConn) SendEnvDescribe() error {
 	return err
 
 }
-
-// func DummyObs() {
-// 	t, obs, err := env.GetEnvObservation("test")
-// 	if err != nil {
-// 		log.Info(err)
-// 	}
-
-// 	// img, _, err := image.Decode(bytes.NewReader(obs))
-// 	// if err != nil {
-// 	// 	log.Fatalln(err)
-// 	// }
-
-// 	// //save the imgByte to file
-// 	// out, err := os.Create("./QRImg.png")
-
-// 	// if err != nil {
-// 	// 	log.Info(err)
-// 	// 	os.Exit(1)
-// 	// }
-
-// 	// err = png.Encode(out, img)
-
-// 	// if err != nil {
-// 	// 	log.Info(err)
-// 	// 	os.Exit(1)
-// 	// }
-// 	//obsString := base64.StdEncoding.EncodeToString(obs)
-// 	var observation string
-// 	if t == "image" {
-// 		observation = base64.StdEncoding.EncodeToString(obs)
-// 	} else {
-// 		observation = string(obs)
-// 	}
-// 	log.Info("The type is ", t)
-// 	log.Info("The obs is ", observation)
-// }
-
-// func DummyInfo() {
-
-// 	t, info, err := env.GetEnvInfo("test")
-// 	if err != nil {
-// 		log.Info(err)
-// 	}
-
-// 	infoString := base64.StdEncoding.EncodeToString(info)
-// 	log.Info("The type is ", t)
-// 	log.Info("The info is ", infoString)
-
-// }
-
-// go func() {
-
-// 	for {
-// 		select {
-// 		case status := <-statusChan:
-// 			switch status {
-// 			case "launching":
-// 				log.Info("Runtime is launching")
-// 			case "resetting":
-// 				log.Info("Env is resetting")
-// 			case "running":
-// 				log.Info("Env is running")
-// 			}
-// 		case trigger := <-triggerChan:
-// 			switch trigger {
-// 			case pluginObj *shared.PluginConfig"launch":
-// 				Launch(&m)
-// 			case "reset":
-// 				Reset(&m)
-// 			}
-// 		}
-// 	}
-// }()
-
-// statusChan := make(chan string)
-// triggerChan := make(chan string)
-// rewardChan := make(chan Body)
-// time.Sleep(5 * time.Second)
-
-// go RewardController(statusChan, triggerChan, rewardChan)
-// // // //go EnvController(status)
-// // // //go agent_conn.RewardController()
-// ticker := time.NewTicker(time.Duration(1000/agent_conn.envState.Fps) * time.Millisecond)
-
-// go func() {
-// 	i := 0
-// 	for {
-// 		select {
-// 		case <-ticker.C:
-// 			log.Info("Sending reward ", i)
-// 			agent_conn.Send(ConstructRewardMessage(GetReward()))
-// 			i++
-// 		case state := <-statusChan:
-// 			log.Info("Status is", state)
-// 			agent_conn.envState.SetEnvStatus(state)
-// 			// default:
-// 			// 	log.Info("Default option")
-// 		}
-
-// 	}
-// }()
-
-//go agent_conn.EnvController()
-//}

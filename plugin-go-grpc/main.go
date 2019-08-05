@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"runtime/debug"
 	"strings"
 
 	"github.com/hashicorp/go-plugin"
@@ -48,13 +49,13 @@ func (Env) Init(key string) (string, error) {
 		}
 	}
 
-	recordingDir := shared.UserHomeDir() + "/" + ".jiminy/plugins/" + key + "/recordings/"
+	// recordingDir := shared.UserHomeDir() + "/" + ".jiminy/plugins/" + key + "/recordings/"
 
-	os.MkdirAll(recordingDir, os.ModePerm)
+	// os.MkdirAll(recordingDir, os.ModePerm)
 
-	proxy := create_vnc_proxy("", recordingDir, ":5901", "boxware", "localhost", "boxware", "5900", "dummyDesk")
+	// proxy := create_vnc_proxy("", recordingDir, ":5901", "boxware", "localhost", "boxware", "5900", "dummyDesk")
 
-	go proxy.StartListening()
+	// go proxy.StartListening()
 
 	serve_static(key)
 	return "env is initialized:" + key, err
@@ -62,6 +63,12 @@ func (Env) Init(key string) (string, error) {
 
 //Launch function contains the code to launch and handle the main environment runtime(say a browser).
 func (Env) Launch(key string) (string, error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("stacktrace from panic: \n" + string(debug.Stack()))
+		}
+	}()
 
 	pluginConfig = shared.CreatePluginConfig(key)
 
@@ -72,23 +79,29 @@ func (Env) Launch(key string) (string, error) {
 
 	var err error
 
-	opts := []selenium.ServiceOption{
-		selenium.GeckoDriver(geckoDriverPath),
-		selenium.Output(os.Stderr),
+	for {
+		opts := []selenium.ServiceOption{
+			selenium.GeckoDriver(geckoDriverPath),
+			selenium.Output(os.Stderr),
+		}
+
+		selenium.SetDebug(true)
+		service, err = selenium.NewSeleniumService(seleniumPath, port, opts...)
+		if err != nil {
+			panic(err)
+		}
+		//defer service.Stop()
+
+		caps := selenium.Capabilities{"browserName": "firefox"}
+		wd, err = selenium.NewRemote(caps, fmt.Sprintf("http://localhost:%d/wd/hub", port))
+		if err != nil {
+			panic(err)
+		} else {
+			break
+		}
+
 	}
 
-	selenium.SetDebug(true)
-	service, err = selenium.NewSeleniumService(seleniumPath, port, opts...)
-	if err != nil {
-		panic(err)
-	}
-	//defer service.Stop()
-
-	caps := selenium.Capabilities{"browserName": "firefox"}
-	wd, err = selenium.NewRemote(caps, fmt.Sprintf("http://localhost:%d/wd/hub", port))
-	if err != nil {
-		panic(err)
-	}
 	//defer wd.Quit()
 	//serve_static()
 	return "env is launched:" + key, err
@@ -99,6 +112,12 @@ func (Env) Launch(key string) (string, error) {
 //Handler functions can be written as to how handle each task best.
 func (Env) Reset(key string) (string, error) {
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("stacktrace from panic: \n" + string(debug.Stack()))
+		}
+	}()
+
 	var envString []string = strings.Split(key, "/")
 
 	current, _ := wd.CurrentURL()
@@ -106,16 +125,21 @@ func (Env) Reset(key string) (string, error) {
 	if current == taskList[envString[len(envString)-1]] {
 		return "env is already reset", nil
 	} else {
-		if err := wd.Get(taskList[envString[len(envString)-1]]); err != nil {
-			panic(err)
-		}
 		var reply interface{}
 		var err error
+		for {
+			if err = wd.Get(taskList[envString[len(envString)-1]]); err != nil {
+				panic(err)
+			}
 
-		script := "return document.readyState"
-		reply, err = wd.ExecuteScript(script, nil)
-		if err != nil {
-			panic(err)
+			script := "return document.readyState"
+			reply, err = wd.ExecuteScript(script, nil)
+			if err != nil {
+				panic(err)
+			} else {
+				break
+			}
+
 		}
 
 		return "env is reset now:" + reply.(string), err
