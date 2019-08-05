@@ -1,9 +1,9 @@
 package main
 
 import (
-	"encoding/base64"
 	"fmt"
 	"net/http"
+
 	// "fmt"
 	"bytes"
 	"os"
@@ -597,7 +597,7 @@ func (c *AgentConn) SendEnvReward(reward float32, done bool, info string) error 
 		Reward: reward,
 		Done:   done,
 		Info:   info,
-	}   
+	}
 
 	m := Message{
 		Method:  method,
@@ -622,7 +622,7 @@ func (c *AgentConn) SendEnvObservation() error {
 		log.Info(err)
 	}
 	observation := bytes.NewBuffer(obs).String()
- 
+
 	// if t == "image" {
 	// 	observation := base64.StdEncoding.EncodeToString(obs)
 	// } else {
