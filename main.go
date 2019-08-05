@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/base64"
 	"fmt"
 	"net/http"
-	// "fmt"
 	"bytes"
 	"os"
 	"os/exec"
