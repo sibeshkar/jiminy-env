@@ -340,8 +340,7 @@ core.getDOMInfo = function (baseElement) {
   function getDOMInfoOfElement(element) {
     if (element.id === 'reward-display' ||
         element.id === 'sync-task-cover' ||
-        element.id === 'click-canvas' ||
-        element.id === 'query') return;
+        element.id === 'click-canvas' ) return;
     var rect = element.getBoundingClientRect();
     if (rect.width == 0 || rect.height == 0) return;
     var answer = {
@@ -475,7 +474,7 @@ core.getDOMInfo = function (baseElement) {
   return getDOMInfoOfElement(baseElement || document.body);
 }
 
- 
+
 /* Debug: return a mapping from ref to its DOMInfo */
 core.flattenDOMInfo = function (rootDomInfo, flattened) {
   if (flattened == undefined) flattened = {};
@@ -551,7 +550,7 @@ core.canvasDrawElementClick = function (element) {
   var rect = element.getBoundingClientRect()
   var ctx = core.clickTrackCtx;
   ctx.fillStyle = "rgba(100, 100, 255, 0.8)";
-  ctx.fillRect(rect.left, rect.top, rect.width, rect.height); 
+  ctx.fillRect(rect.left, rect.top, rect.width, rect.height);
 }
 
 core.canvasClear = function () {
