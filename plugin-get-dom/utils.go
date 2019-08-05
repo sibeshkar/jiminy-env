@@ -9,8 +9,9 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"encoding/json"
 
-	"github.com/golang/protobuf/proto"
+	// "github.com/golang/protobuf/proto"
 	jiminyProtos "github.com/prannayk/jiminy-protos/protos"
 
 	"github.com/sibeshkar/jiminy-env/shared"
@@ -83,6 +84,11 @@ func dom_to_betadom(json interface{}) ([]*jiminyProtos.DomObject, error) {
 			return nil, DomTagPropertyModeFailure
 		}
 
+		id, ok := json_object["id"].(string)
+		if !ok {
+			return nil, DomTagPropertyModeFailure
+		}
+
 		if json_object["children"] == nil {
 			continue
 		}
@@ -102,7 +108,7 @@ func dom_to_betadom(json interface{}) ([]*jiminyProtos.DomObject, error) {
 				return nil, err
 			}
 			dom_object := &jiminyProtos.DomObject{
-				Type:            getType(tag),
+				Type:            getType(tag, id),
 				Content:         getStringOrNil(json_object["text"]),
 				DescriptionText: string("Empty"),
 				Focused:         json_object["focused"] != nil,
@@ -143,8 +149,9 @@ func getStringOrNil(str interface{}) string {
 	return str.(string)
 }
 
-func getType(tag string) string {
+func getType(tag string, id string) string {
 	if tag == "DIV" || tag == "SPAN" || tag == "P" {
+		if id == "query" { return "query" }
 		return "text"
 	}
 	if tag == "INPUT_text" {
@@ -172,11 +179,14 @@ func tagInObjectList(tag string, text interface{}) bool {
 	if tag == "LABEL" {
 		return true
 	}
+	if tag == "BUTTON" {
+		return true
+	}
 	return false
 }
 
-func process_dom(json interface{}) ([]byte, error) {
-	betadom_object_list, err := dom_to_betadom(json)
+func process_dom(json_input interface{}) ([]byte, error) {
+	betadom_object_list, err := dom_to_betadom(json_input)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +195,7 @@ func process_dom(json interface{}) ([]byte, error) {
 		Objects:    betadom_object_list,
 	}
 
-	instance_marshal, err := proto.Marshal(instance)
+	instance_marshal, err := json.Marshal(instance)
 	if err != nil {
 		return nil, err
 	}
