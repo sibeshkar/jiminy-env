@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"os/signal"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -332,16 +331,16 @@ func pluginRPC(pluginObj *shared.PluginConfig) (shared.Env, *plugin.Client) {
 	}
 	client := plugin.NewClient(cfg)
 
-	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)
+	// go func() {
+	// 	c := make(chan os.Signal, 1)
+	// 	signal.Notify(c, os.Interrupt)
 
-		<-c
-		err := cfg.Cmd.Process.Kill()
-		if err != nil {
-			log.Fatalf("Process exit failed: %v", err)
-		}
-	}()
+	// 	<-c
+	// 	err := cfg.Cmd.Process.Kill()
+	// 	if err != nil {
+	// 		log.Fatalf("Process exit failed: %v", err)
+	// 	}
+	// }()
 	// defer client.Kill()
 
 	// Connect via RPC

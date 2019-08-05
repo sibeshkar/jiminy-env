@@ -50,6 +50,12 @@ func (Env) Init(key string) (string, error) {
 			log.Fatalf("cmd.Run() failed with %s\n", err)
 		}
 		ExitOnInterrupt(cmd)
+		cmd = exec.Command("/bin/bash", "-c", shared.UserHomeDir()+"/"+".jiminy/plugins/"+key+"/vendor/noVNC/utils/launch.sh", "--vnc", "localhost:5900", "&")
+		err = cmd.Start()
+		if err != nil {
+			log.Fatalf("cmd.Run() failed with %s\n", err)
+		}
+		ExitOnInterrupt(cmd)
 	}
 
 	// recordingDir := shared.UserHomeDir() + "/" + ".jiminy/plugins/" + key + "/recordings/"
