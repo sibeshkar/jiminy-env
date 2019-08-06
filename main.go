@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"os"
 	"os/exec"
-	"os/signal"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -332,16 +331,16 @@ func pluginRPC(pluginObj *shared.PluginConfig) (shared.Env, *plugin.Client) {
 	}
 	client := plugin.NewClient(cfg)
 
-	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)
+	// go func() {
+	// 	c := make(chan os.Signal, 1)
+	// 	signal.Notify(c, os.Interrupt)
 
-		<-c
-		err := cfg.Cmd.Process.Kill()
-		if err != nil {
-			log.Fatalf("Process exit failed: %v", err)
-		}
-	}()
+	// 	<-c
+	// 	err := cfg.Cmd.Process.Kill()
+	// 	if err != nil {
+	// 		log.Fatalf("Process exit failed: %v", err)
+	// 	}
+	// }()
 	// defer client.Kill()
 
 	// Connect via RPC
@@ -596,7 +595,7 @@ func (c *AgentConn) SendEnvReward(reward float32, done bool, info string) error 
 		Reward: reward,
 		Done:   done,
 		Info:   info,
-	}   
+	}
 
 	m := Message{
 		Method:  method,
@@ -621,7 +620,7 @@ func (c *AgentConn) SendEnvObservation() error {
 		log.Info(err)
 	}
 	observation := bytes.NewBuffer(obs).String()
- 
+
 	// if t == "image" {
 	// 	observation := base64.StdEncoding.EncodeToString(obs)
 	// } else {
