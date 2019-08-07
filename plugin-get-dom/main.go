@@ -31,7 +31,7 @@ type Env struct{}
 //Init function contains all the ancilliary services, like static file servers, VNC servers, OBS websocket etc that are initialized
 //before the actual environment runtime (say a browser) starts. Important : they are background services that need to run concurrently to the main runtime.
 //Can also run pre-flight checks here.
-func (Env) Init(key string) (string, error) {
+func (Env) Init(key string, record bool) (string, error) {
 	//http://127.0.0.1:3000/miniwob/bisect-angle.html
 	//cmd := exec.Command("sh", "-c", shared.UserHomeDir()+"/"+".jiminy/plugins/"+key+"/vendor/boxware-tigervnc", "&")
 	//cmd.Start()
@@ -58,13 +58,15 @@ func (Env) Init(key string) (string, error) {
 		ExitOnInterrupt(cmd)
 	}
 
-	// recordingDir := shared.UserHomeDir() + "/" + ".jiminy/plugins/" + key + "/recordings/"
+	if record {
+		recordingDir := shared.UserHomeDir() + "/" + ".jiminy/plugins/" + key + "/recordings/"
 
-	// os.MkdirAll(recordingDir, os.ModePerm)
+		os.MkdirAll(recordingDir, os.ModePerm)
 
-	// proxy := create_vnc_proxy("", recordingDir, ":5901", "boxware", "localhost", "boxware", "5900", "dummyDesk")
+		proxy := create_vnc_proxy("", recordingDir, ":5901", "boxware", "localhost", "boxware", "5900", "dummyDesk")
 
-	// go proxy.StartListening()
+		go proxy.StartListening()
+	}
 
 	serve_static(key)
 	return "env is initialized:" + key, err

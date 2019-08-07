@@ -25,7 +25,7 @@ var PluginMap = map[string]plugin.Plugin{
 
 // Env is the interface that we're exposing as a plugin.
 type Env interface {
-	Init(key string) (string, error)
+	Init(key string, record bool) (string, error)
 	Launch(key string) (string, error)
 	Reset(key string) (string, error)
 	Close(key string) (string, error)

@@ -1,9 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
-	"bytes"
 	"os"
 	"os/exec"
 	"runtime/debug"
@@ -59,6 +59,7 @@ type Body struct {
 	Fps       float32 `json:"fps"`
 	Reward    float32 `json:"reward"`
 	Done      bool    `json:"done"`
+	Record    bool    `json:"record"`
 	Obs       string  `json:"observation"`
 	ObsType   string  `json:"observation_type"`
 	Info      string  `json:"info"`
@@ -74,24 +75,31 @@ type Message struct {
 }
 
 func main() {
-
+	var record string
 	app := cli.NewApp()
 
 	app.Commands = []cli.Command{
 		{
 			Name:    "run",
-			Aliases: []string{"a"},
+			Aliases: []string{"r"},
 			Usage:   "Run an installed environment. e.g. {empty} or sibeshkar/wob-v0 or sibeshkar/wob-v0/TicTacToe",
 			Action: func(c *cli.Context) error {
+				rec := false
+
+				if record == "false" {
+					rec = false
+				} else if record == "true" {
+					rec = true
+				}
 
 				if len(c.Args().First()) != 0 {
 					s := strings.Split(c.Args().First(), "/")
 					if len(s) == 2 {
 
-						RunPlugin(c.Args().First())
+						RunPlugin(c.Args().First(), rec)
 
 					} else if len(s) == 3 {
-						RunPluginTask(c.Args().First())
+						RunPluginTask(c.Args().First(), rec)
 					}
 
 				} else {
@@ -100,12 +108,15 @@ func main() {
 				}
 				return nil
 			},
+
+			//TODO: Add BashComplete here
 		},
 		{
 			Name:    "install",
-			Aliases: []string{"c"},
+			Aliases: []string{"i"},
 			Usage:   "Install env plugin from directory or zip file.",
 			Action: func(c *cli.Context) error {
+
 				log.Info("the directory is ", c.Args().First())
 				var format []string = strings.Split(c.Args().First(), ".")
 				if format[len(format)-1] == "zip" {
@@ -119,7 +130,7 @@ func main() {
 		},
 		{
 			Name:    "zip",
-			Aliases: []string{"c"},
+			Aliases: []string{"z"},
 			Usage:   "Zip plugin folder according to config.json to create zip archive inside",
 			Action: func(c *cli.Context) error {
 				log.Info("the directory is ", c.Args().First())
@@ -131,6 +142,14 @@ func main() {
 		},
 	}
 
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:        "rec, r",
+			Value:       "false",
+			Usage:       "whether to record or not",
+			Destination: &record,
+		},
+	}
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
@@ -138,7 +157,7 @@ func main() {
 
 }
 
-func RunPlugin(pluginLink string) {
+func RunPlugin(pluginLink string, record bool) {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -152,7 +171,7 @@ func RunPlugin(pluginLink string) {
 	env, client_conf.client = pluginRPC(&EnvPlugin)
 	client_conf.init = true
 	//TODO: client.Kill() before ending process, otherwise there are zombie plugin processes
-	go env.Init(pluginLink)
+	go env.Init(pluginLink, record)
 	//time.Sleep(2 * time.Second)
 	env.Launch(pluginLink)
 	log.Info("Running websocket server...")
@@ -161,7 +180,7 @@ func RunPlugin(pluginLink string) {
 
 }
 
-func RunPluginTask(pluginLink string) {
+func RunPluginTask(pluginLink string, record bool) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("stacktrace from panic: \n" + string(debug.Stack()))
@@ -177,7 +196,7 @@ func RunPluginTask(pluginLink string) {
 	env, client_conf.client = pluginRPC(&EnvPlugin)
 	client_conf.init = true
 	//TODO: client.Kill() before ending process, otherwise there are zombie plugin processes
-	go env.Init(envPluginLink)
+	go env.Init(envPluginLink, record)
 	//time.Sleep(2 * time.Second)
 
 	for {
@@ -418,7 +437,7 @@ func (c *AgentConn) OnMessage() error {
 func (c *AgentConn) InitLaunch(m *Message) {
 	log.Info("launch message received: %s\n", m.Body.EnvId)
 	c.envState.SetEnvStatus("launching")
-	go env.Init(m.Body.EnvId)
+	go env.Init(m.Body.EnvId, m.Body.Record)
 	//time.Sleep(2 * time.Second)
 	result, err := env.Launch(m.Body.EnvId)
 	if err != nil {

@@ -59,12 +59,14 @@ docker-d:
 	jiminy zip plugin-get-dom/
 	docker build . -t sibeshkar/jiminy-env:detached -f Dockerfile.detached --force-rm
 
-
 docker-run:
-	docker run -it --rm -p 5901:5900 -p 15901:15900 -p 84:6080 sibeshkar/jiminy-env:$(VERSION)
+	docker run -it --rm -p 5901:5900 -p 15901:15900 --memory="500m" -p 84:6080 sibeshkar/jiminy-env:$(VERSION)
 
 docker-run-d:
-	docker run -it --rm -p 5901:5900 -p 15901:15900 -p 84:6080 sibeshkar/jiminy-env:detached
+	docker run -it --rm -p 5901:5900 -p 15901:15900 --memory="500m" -p 84:6080 sibeshkar/jiminy-env:detached
+
+docker-record:
+	docker run -it --rm -p 5901:5901 -p 15901:15900 --memory="500m" -p 84:6080 sibeshkar/jiminy-env:$(VERSION)
 
 docker-push:
 	docker push sibeshkar/jiminy-env:$(VERSION)
