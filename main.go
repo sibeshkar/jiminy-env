@@ -66,6 +66,7 @@ type Body struct {
 	InfoType  string  `json:"info_type"`
 	Message   string  `json:"message"`
 	Seed      int64   `json:"seed"`
+	Action    []byte  `json:"action"`
 }
 
 type Message struct {
@@ -276,9 +277,9 @@ mainloop:
 			log.Info("Env is resetting to task")
 			//time.Sleep(20 * time.Microsecond)
 		case "running":
-			reward, done, _ := env.GetReward()
+			reward, done, err := env.GetReward()
 
-			//log.Infof("reward:%v, done: %v", reward, done)
+			log.Infof("reward:%v, done: %v, error: %v", reward, done, err)
 
 			if reward != 0.0 {
 				if !done {

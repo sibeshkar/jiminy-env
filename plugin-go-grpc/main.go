@@ -54,7 +54,7 @@ func (Env) Init(key string, record bool) (string, error) {
 
 		os.MkdirAll(recordingDir, os.ModePerm)
 
-		proxy := create_vnc_proxy("", recordingDir, ":5901", "boxware", "localhost", "boxware", "5900", "dummyDesk")
+		proxy := NewVncProxy("", recordingDir, ":5901", "boxware", "localhost", "boxware", "5900", "dummyDesk")
 
 		go proxy.StartListening()
 

@@ -1,0 +1,32 @@
+//JSON messagin protocol
+syntax = "proto3";
+package proto;
+
+message Headers {
+    uint32 MessageId = 2;
+    uint32 ParentMessageId = 3;
+    uint32 EpisodeId = 4;
+}
+
+message Body {
+    string EnvId = 1;
+    string EnvStatus = 2;
+    float Fps = 3;
+    float Reward = 4;
+    bool Done = 5;
+    bool Record = 6;
+    string Obs = 7;
+    string ObsType = 8;
+    string Info = 9;
+    string InfoType = 10;
+    string Message = 11;
+    uint32 Seed = 12;
+    bytes Action = 13;
+}
+
+message Message {
+    string Method = 1;
+    Headers Headers = 2;
+    Body Body = 3;
+    float Timestamp = 4;
+}

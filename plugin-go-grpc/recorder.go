@@ -4,7 +4,7 @@ import (
 	vnc_rec "github.com/sibeshkar/vncproxy/vnc_rec"
 )
 
-func create_vnc_proxy(WsListeningURL string, RecordingDir string, TCPListeningURL string, ProxyVncPassword string, TargetHostname string, TargetPassword string, TargetPort string, ID string) *vnc_rec.VncProxy {
+func NewVncProxy(WsListeningURL string, RecordingDir string, TCPListeningURL string, ProxyVncPassword string, TargetHostname string, TargetPassword string, TargetPort string, ID string) *vnc_rec.VncProxy {
 	//create default session if required
 	proxy := &vnc_rec.VncProxy{
 		WsListeningURL:  WsListeningURL, // empty = not listening on ws

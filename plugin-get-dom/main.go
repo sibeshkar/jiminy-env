@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +24,9 @@ var (
 	wd              selenium.WebDriver
 	service         *selenium.Service
 	filesPath       string
+	record_val      = false
+	recordingDir    string
+	recorder        *Recorder
 )
 
 // Here is a real implementation of Env that writes to a local file with
@@ -35,6 +40,7 @@ func (Env) Init(key string, record bool) (string, error) {
 	//http://127.0.0.1:3000/miniwob/bisect-angle.html
 	//cmd := exec.Command("sh", "-c", shared.UserHomeDir()+"/"+".jiminy/plugins/"+key+"/vendor/boxware-tigervnc", "&")
 	//cmd.Start()
+	record_val = record
 	var err error
 	if os.Getenv("DISPLAY") == "" {
 		os.Setenv("DISPLAY", ":0")
@@ -58,14 +64,23 @@ func (Env) Init(key string, record bool) (string, error) {
 		ExitOnInterrupt(cmd)
 	}
 
-	if record {
-		recordingDir := shared.UserHomeDir() + "/" + ".jiminy/plugins/" + key + "/recordings/"
+	if record_val {
+		timeCurrent := strconv.FormatInt(time.Now().Unix(), 10)
+		recordingDir := shared.UserHomeDir() + "/" + ".jiminy/plugins/" + key + "/recordings/recording_" + timeCurrent + "/"
 
 		os.MkdirAll(recordingDir, os.ModePerm)
 
-		proxy := create_vnc_proxy("", recordingDir, ":5901", "boxware", "localhost", "boxware", "5900", "dummyDesk")
+		proxy := NewVncProxy("", recordingDir, ":5901", "boxware", "localhost", "boxware", "5900", "dummyDesk")
 
 		go proxy.StartListening()
+
+		recorder, err = NewRecorder(recordingDir)
+		if err != nil {
+			fmt.Print("Error creating recorder %v", err)
+		}
+
+		//go recorder.StartListening()
+
 	}
 
 	serve_static(key)
@@ -161,6 +176,7 @@ func (Env) Close(key string) (string, error) {
 }
 
 func (Env) GetReward() (float32, bool, error) {
+
 	script := "return WOB_REWARD_GLOBAL; "
 	reply, err := safe_execute(script, nil)
 	safe_execute(" window.WOB_REWARD_GLOBAL = 0;", nil)
@@ -171,6 +187,13 @@ func (Env) GetReward() (float32, bool, error) {
 	reward := float32(reply.(float64))
 	reply_done, err := safe_execute(" try { return WOB_DONE_GLOBAL; } catch(err) { return false; } ", nil)
 	done := reply_done.(bool)
+
+	//TODO: fix this
+	if record_val {
+		recorder.writeToDisk()
+		recorder.NewBatch()
+		recorder.AddRewardtoBatch(reward, done, "{}")
+	}
 	return reward, done, err
 }
 
@@ -194,7 +217,7 @@ func (Env) GetReward() (float32, bool, error) {
 
 // }
 
-//Misc info to get once every episode
+//Extra observation to get from episode
 func (Env) GetEnvObs(key string) (string, []byte, error) {
 
 	// instruction, err := safe_execute("return document.querySelector('#query').textContent", nil)
@@ -207,6 +230,10 @@ func (Env) GetEnvObs(key string) (string, []byte, error) {
 	}
 
 	obs, err := process_dom(reply)
+	obsString := bytes.NewBuffer(obs).String()
+	if record_val {
+		recorder.AddObstoBatch("dom", obsString)
+	}
 
 	return "dom", obs, err
 
