@@ -8,8 +8,8 @@ import (
 
 	"github.com/matttproud/golang_protobuf_extensions/pbutil"
 	"github.com/sibeshkar/jiminy-env/shared"
-	"github.com/sibeshkar/vncproxy/logger"
 	vnc_rec "github.com/sibeshkar/vncproxy/vnc_rec"
+	log "github.com/sirupsen/logrus"
 )
 
 func NewVncProxy(WsListeningURL string, RecordingDir string, TCPListeningURL string, ProxyVncPassword string, TargetHostname string, TargetPassword string, TargetPort string, ID string) *vnc_rec.VncProxy {
@@ -51,7 +51,7 @@ func NewRecorder(dirname string) (*Recorder, error) {
 
 	writer, err := os.OpenFile(recPath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
-		logger.Errorf("unable to open file: %s, error: %v", recPath, err)
+		log.Error("unable to open file: %s, error: %v", recPath, err)
 		return nil, err
 	}
 
@@ -60,28 +60,25 @@ func NewRecorder(dirname string) (*Recorder, error) {
 		writer:   writer,
 	}
 
-	method := "v0.env.record"
-	timestamp := float32(time.Now().UnixNano() / 1000000)
-
-	recorder.batch = &shared.Message{
-		Method:    method,
-		Timestamp: timestamp,
-	}
 	recorder.NewBatch()
+
 	return recorder, err
 
 }
 
-func (r Recorder) NewBatch() {
+func (r *Recorder) NewBatch() {
 
-	// r.msgLock.Lock()
-	// defer r.msgLock.Unlock()
-	r.writeToDisk()
+	r.Lock()
+	defer r.Unlock()
+
 	method := "v0.env.record"
-	timestamp := float32(time.Now().UnixNano() / 1000000)
+	timestamp := uint32(time.Now().UnixNano() / int64(time.Millisecond))
+
+	body := &shared.Body{}
 
 	r.batch = &shared.Message{
 		Method:    method,
+		Body:      body,
 		Timestamp: timestamp,
 	}
 
@@ -95,70 +92,41 @@ func (r Recorder) NewBatch() {
 
 // }
 
-func (r Recorder) writeToDisk() {
+func (r *Recorder) writeToDisk() {
 	pbutil.WriteDelimited(r.writer, r.batch)
 
 }
 
-func (r Recorder) GetBatch() *shared.Message {
+// func (r Recorder) GetBatch() *shared.Message {
+// 	r.Lock()
+// 	defer r.Unlock()
+// 	return r.batch
+
+// }
+
+// func (r *Recorder) pushToChannel() {
+// 	r.batchChan <- r.batch
+// }
+
+func (r *Recorder) AddRewardtoBatch(reward float32, done bool, info string) {
+
 	r.Lock()
 	defer r.Unlock()
-	return r.batch
 
-}
-
-func (r Recorder) pushToChannel() {
-	r.batchChan <- r.batch
-}
-
-func (r Recorder) AddRewardtoBatch(reward float32, done bool, info string) {
-
-	r.Lock()
-	defer r.Unlock()
-
-	method := r.batch.GetMethod()
-
-	timestamp := r.batch.GetTimestamp()
-
-	body := &shared.Body{
-		Reward: reward,
-		Done:   done,
-		Info:   info,
-	}
-
-	r.batch = &shared.Message{
-		Method:    method,
-		Body:      body,
-		Timestamp: timestamp,
-	}
+	r.batch.Body.Reward = reward
+	r.batch.Body.Done = done
+	r.batch.Body.Info = info
 
 	// r.batch.Body.Done = done
 	// r.batch.Body.Info = info
 }
 
-func (r Recorder) AddObstoBatch(obstype string, obs string) {
+func (r *Recorder) AddObstoBatch(obstype string, obs string) {
 
 	r.Lock()
 	defer r.Unlock()
 
-	method := r.batch.GetMethod()
-
-	timestamp := r.batch.GetTimestamp()
-
-	bodyRef := r.batch.GetBody()
-
-	body := &shared.Body{
-		Reward:  bodyRef.GetReward(),
-		Done:    bodyRef.GetDone(),
-		Info:    bodyRef.GetInfo(),
-		Obs:     obs,
-		ObsType: obstype,
-	}
-
-	r.batch = &shared.Message{
-		Method:    method,
-		Body:      body,
-		Timestamp: timestamp,
-	}
+	r.batch.Body.Obs = obs
+	r.batch.Body.ObsType = obstype
 
 }

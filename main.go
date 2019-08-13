@@ -279,7 +279,11 @@ mainloop:
 		case "running":
 			reward, done, err := env.GetReward()
 
-			log.Infof("reward:%v, done: %v, error: %v", reward, done, err)
+			if err != nil {
+				log.Error("Error while getting reward", err)
+			}
+
+			//log.Infof("reward:%v, done: %v, error: %v", reward, done, err)
 
 			if reward != 0.0 {
 				if !done {
