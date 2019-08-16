@@ -190,6 +190,9 @@ func (Env) GetReward() (float32, bool, error) {
 
 	//TODO: fix this
 	if record_val {
+		if !recorder.initiated {
+			recorder.NewBatch()
+		}
 		recorder.writeToDisk()
 		recorder.NewBatch()
 		recorder.AddRewardtoBatch(reward, done, "{}")

@@ -7,7 +7,8 @@ import (
 	"time"
 
 	"github.com/matttproud/golang_protobuf_extensions/pbutil"
-	"github.com/sibeshkar/jiminy-env/shared"
+
+	pb_demo "github.com/sibeshkar/demoparser/proto"
 	vnc_rec "github.com/sibeshkar/vncproxy/vnc_rec"
 	log "github.com/sirupsen/logrus"
 )
@@ -37,9 +38,11 @@ func NewVncProxy(WsListeningURL string, RecordingDir string, TCPListeningURL str
 type Recorder struct {
 	filepath  string
 	writer    *os.File
-	batch     *shared.Message
-	batchChan chan *shared.Message
+	batch     *pb_demo.Message
+	batchChan chan *pb_demo.Message
 	sync.Mutex
+	startTime int
+	initiated bool
 }
 
 func NewRecorder(dirname string) (*Recorder, error) {
@@ -56,11 +59,10 @@ func NewRecorder(dirname string) (*Recorder, error) {
 	}
 
 	recorder := &Recorder{
-		filepath: recPath,
-		writer:   writer,
+		filepath:  recPath,
+		writer:    writer,
+		initiated: false,
 	}
-
-	recorder.NewBatch()
 
 	return recorder, err
 
@@ -71,12 +73,18 @@ func (r *Recorder) NewBatch() {
 	r.Lock()
 	defer r.Unlock()
 
+	if !r.initiated {
+		r.startTime = getNowMillisec()
+		r.initiated = true
+
+	}
+
 	method := "v0.env.record"
-	timestamp := uint32(time.Now().UnixNano() / int64(time.Millisecond))
+	timestamp := uint32(getNowMillisec() - r.startTime)
 
-	body := &shared.Body{}
+	body := &pb_demo.Body{}
 
-	r.batch = &shared.Message{
+	r.batch = &pb_demo.Message{
 		Method:    method,
 		Body:      body,
 		Timestamp: timestamp,
@@ -97,7 +105,11 @@ func (r *Recorder) writeToDisk() {
 
 }
 
-// func (r Recorder) GetBatch() *shared.Message {
+func getNowMillisec() int {
+	return int(time.Now().UnixNano() / int64(time.Millisecond))
+}
+
+// func (r Recorder) GetBatch() *pb_demo.Message {
 // 	r.Lock()
 // 	defer r.Unlock()
 // 	return r.batch

@@ -297,10 +297,6 @@ mainloop:
 				}
 			}
 
-			// if err := agent_conn.SendEnvObservation(); err != nil {
-			// 	log.Error(err)
-			// }
-
 			if err := agent_conn.SendEnvObservation(); err != nil {
 				log.Error(err)
 				break mainloop
