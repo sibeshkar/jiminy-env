@@ -141,6 +141,25 @@ func main() {
 				return nil
 			},
 		},
+
+		{
+			Name:    "record",
+			Aliases: []string{"e"},
+			Usage:   "Record demonstration for an installed environment. e.g. {empty} or sibeshkar/wob-v0 or sibeshkar/wob-v0/TicTacToe",
+			Action: func(c *cli.Context) error {
+				rec := true
+
+				if len(c.Args().First()) != 0 {
+					RunPluginRecord(c.Args().First(), rec)
+
+				} else {
+					log.Error("No proper task provided. Provide a task.")
+				}
+				return nil
+			},
+
+			//TODO: Add BashComplete here
+		},
 	}
 
 	app.Flags = []cli.Flag{
@@ -225,6 +244,155 @@ func RunPluginTask(pluginLink string, record bool) {
 
 }
 
+func RunPluginRecord(pluginLink string, record bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("stacktrace from panic: \n" + string(debug.Stack()))
+		}
+	}()
+
+	s := strings.Split(pluginLink, "/")
+
+	envPluginLink := s[0] + "/" + s[1]
+	log.Info("Running environment: ", envPluginLink)
+
+	EnvPlugin = shared.CreatePluginConfig(envPluginLink)
+	env, client_conf.client = pluginRPC(&EnvPlugin)
+	client_conf.init = true
+	//TODO: client.Kill() before ending process, otherwise there are zombie plugin processes
+	go env.Init(envPluginLink, record)
+	//time.Sleep(2 * time.Second)
+
+	agent_conn, err := NewAgentConnWithoutWs()
+	if err != nil {
+		log.Println(err)
+	}
+
+	for {
+		agent_conn.envState.SetEnvId(pluginLink)
+		agent_conn.envState.SetEnvStatus("launching")
+		_, err := env.Launch(envPluginLink)
+		if err != nil {
+			log.Errorf("Error while launching %v ", err)
+			break
+		}
+		//time.Sleep(2 * time.Second)
+		agent_conn.envState.SetEnvStatus("resetting")
+		log.Info("Resetting to task: ", pluginLink)
+		_, err = env.Reset(pluginLink)
+		if err != nil {
+			log.Errorf("Error while resetting %v ", err)
+		} else {
+			break
+		}
+
+		//time.Sleep(1 * time.Second)
+
+	}
+
+	// func() {
+	// 	for {
+	// 		reward, done, err := env.GetReward()
+
+	// 		log.Info(reward, done, err)
+	// 	}
+
+	// }()
+
+	agent_conn.envState.SetEnvStatus("running")
+
+	func() {
+		var lastdone bool = true
+
+		t0 := time.Now()
+		var n float32 = 0.0
+
+	mainloop:
+		for {
+			n += 1.0
+			t := t0.Add(time.Duration(n*1000/agent_conn.envState.Fps) * time.Millisecond)
+			dt := t.Sub(time.Now())
+			//log.Infof("n:%v, t: %v, t0: %v, dt: %v", n, t, t0, dt)
+
+			if dt > 0 {
+				if dt >= time.Duration(1*time.Second) {
+					log.Infof("Sleeping for %v", dt)
+				}
+				//log.Infof("Sleeping for %v", dt)
+				time.Sleep(dt)
+			} else {
+				log.Infof("Rewarder falling behind %v", dt)
+
+			}
+			switch agent_conn.envState.GetEnvStatus() {
+			case "launching":
+				log.Info("Env is still launching")
+				//time.Sleep(20 * time.Microsecond)
+			case "resetting":
+				log.Info("Env is resetting to task")
+				//time.Sleep(20 * time.Microsecond)
+			case "running":
+				reward, done, err := env.GetReward()
+
+				if err != nil {
+					log.Error("Error while getting reward", err)
+					break mainloop
+				}
+
+				//log.Infof("reward:%v, done: %v, error: %v", reward, done, err)
+
+				if reward != 0.0 {
+					if !done {
+						log.Infof("Done is not true")
+						done = true
+					}
+					log.Infof("The reward is %v, the done is %v", reward, done)
+
+				}
+
+				_, _, err = env.GetEnvObs(agent_conn.envState.EnvId)
+				if err != nil {
+					log.Info(err)
+					break mainloop
+				}
+
+				// if err := agent_conn.SendEnvObservation(); err != nil {
+				// 	log.Error(err)
+				// 	break mainloop
+				// }
+
+				// t, obs, err := env.GetEnvObs("agent_conn.envState.EnvId")
+
+				// log.Infof("The type is %v, the obs is %v, error is %v:", t, obs, err)
+
+				if done != lastdone {
+					if done == true || lastdone == false {
+						currEpisode := agent_conn.envState.GetEpisodeId()
+						agent_conn.envState.SetEpisodeId(currEpisode + 1)
+						log.Info("Environment is resetting to task again")
+						agent_conn.envState.SetEnvStatus("resetting")
+						agent_conn.Reset()
+
+					} else if done == false || lastdone == true {
+						currEpisode := agent_conn.envState.GetEpisodeId()
+						log.Info("Episode ID is ", currEpisode)
+
+						n = 0.0
+						t0 = time.Now()
+					}
+
+				}
+
+				lastdone = done
+			}
+
+			//time.Sleep(time.Duration(1000/agent_conn.envState.Fps) * time.Millisecond)
+		}
+
+	}()
+
+}
+
 func RunEmpty() {
 	defer func() {
 		if r := recover(); r != nil {
@@ -247,87 +415,92 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	go agent_conn.OnMessage()
 
-	var lastdone bool = true
+	func() {
+		var lastdone bool = true
 
-	t0 := time.Now()
-	var n float32 = 0.0
+		t0 := time.Now()
+		var n float32 = 0.0
 
-mainloop:
-	for {
-		n += 1.0
-		t := t0.Add(time.Duration(n*1000/agent_conn.envState.Fps) * time.Millisecond)
-		dt := t.Sub(time.Now())
-		//log.Infof("n:%v, t: %v, t0: %v, dt: %v", n, t, t0, dt)
+	mainloop:
+		for {
+			n += 1.0
+			t := t0.Add(time.Duration(n*1000/agent_conn.envState.Fps) * time.Millisecond)
+			dt := t.Sub(time.Now())
+			//log.Infof("n:%v, t: %v, t0: %v, dt: %v", n, t, t0, dt)
 
-		if dt > 0 {
-			if dt >= time.Duration(1*time.Second) {
-				log.Infof("Sleeping for %v", dt)
-			}
-			//log.Infof("Sleeping for %v", dt)
-			time.Sleep(dt)
-		} else {
-			log.Infof("Rewarder falling behind %v", dt)
-
-		}
-		switch agent_conn.envState.GetEnvStatus() {
-		case "launching":
-			log.Info("Env is still launching")
-			//time.Sleep(20 * time.Microsecond)
-		case "resetting":
-			log.Info("Env is resetting to task")
-			//time.Sleep(20 * time.Microsecond)
-		case "running":
-			reward, done, err := env.GetReward()
-
-			if err != nil {
-				log.Error("Error while getting reward", err)
-			}
-
-			//log.Infof("reward:%v, done: %v, error: %v", reward, done, err)
-
-			if reward != 0.0 {
-				if !done {
-					log.Infof("Done is not true")
-					done = true
+			if dt > 0 {
+				if dt >= time.Duration(1*time.Second) {
+					log.Infof("Sleeping for %v", dt)
 				}
-				log.Infof("The reward is %v, the done is %v", reward, done)
-				if err := agent_conn.SendEnvReward(reward, done, `{}`); err != nil {
+				//log.Infof("Sleeping for %v", dt)
+				time.Sleep(dt)
+			} else {
+				log.Infof("Rewarder falling behind %v", dt)
+
+			}
+			switch agent_conn.envState.GetEnvStatus() {
+			case "launching":
+				log.Info("Env is still launching")
+				//time.Sleep(20 * time.Microsecond)
+			case "resetting":
+				log.Info("Env is resetting to task")
+				//time.Sleep(20 * time.Microsecond)
+			case "running":
+				reward, done, err := env.GetReward()
+
+				if err != nil {
+					log.Error("Error while getting reward", err)
+				}
+
+				//log.Infof("reward:%v, done: %v, error: %v", reward, done, err)
+
+				if reward != 0.0 {
+					if !done {
+						log.Infof("Done is not true")
+						done = true
+					}
+					log.Infof("The reward is %v, the done is %v", reward, done)
+					if err := agent_conn.SendEnvReward(reward, done, `{}`); err != nil {
+						log.Error(err)
+						break mainloop
+					}
+				}
+
+				if err := agent_conn.SendEnvObservation(); err != nil {
 					log.Error(err)
 					break mainloop
 				}
-			}
 
-			if err := agent_conn.SendEnvObservation(); err != nil {
-				log.Error(err)
-				break mainloop
-			}
+				// t, obs, err := env.GetEnvObs("agent_conn.envState.EnvId")
 
-			// t, obs, err := env.GetEnvObs("agent_conn.envState.EnvId")
+				// log.Infof("The type is %v, the obs is %v, error is %v:", t, obs, err)
 
-			// log.Infof("The type is %v, the obs is %v, error is %v:", t, obs, err)
+				if done != lastdone {
+					if done == true || lastdone == false {
+						currEpisode := agent_conn.envState.GetEpisodeId()
+						agent_conn.envState.SetEpisodeId(currEpisode + 1)
+						log.Info("Environment is resetting to task again")
+						agent_conn.envState.SetEnvStatus("resetting")
+						agent_conn.SendEnvDescribe()
+						agent_conn.Reset()
 
-			if done != lastdone {
-				if done == true || lastdone == false {
-					currEpisode := agent_conn.envState.GetEpisodeId()
-					agent_conn.envState.SetEpisodeId(currEpisode + 1)
-					log.Info("Environment is resetting to task again")
-					agent_conn.Reset()
+					} else if done == false || lastdone == true {
+						currEpisode := agent_conn.envState.GetEpisodeId()
+						log.Info("Episode ID is ", currEpisode)
+						agent_conn.SendEnvDescribe()
+						n = 0.0
+						t0 = time.Now()
+					}
 
-				} else if done == false || lastdone == true {
-					currEpisode := agent_conn.envState.GetEpisodeId()
-					log.Info("Episode ID is ", currEpisode)
-					agent_conn.SendEnvDescribe()
-					n = 0.0
-					t0 = time.Now()
 				}
 
+				lastdone = done
 			}
 
-			lastdone = done
+			//time.Sleep(time.Duration(1000/agent_conn.envState.Fps) * time.Millisecond)
 		}
 
-		//time.Sleep(time.Duration(1000/agent_conn.envState.Fps) * time.Millisecond)
-	}
+	}()
 
 }
 
@@ -394,6 +567,21 @@ func NewAgentConn(w http.ResponseWriter, r *http.Request) (AgentConn, error) {
 	envState, err := NewEnvState("", "launching", 1, defaultFps)
 	agent_conn := AgentConn{
 		ws:       conn,
+		envState: envState,
+	}
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	return agent_conn, err
+}
+
+func NewAgentConnWithoutWs() (AgentConn, error) {
+
+	envState, err := NewEnvState("", "launching", 1, defaultFps)
+	agent_conn := AgentConn{
+
 		envState: envState,
 	}
 
@@ -567,9 +755,6 @@ func (c *AgentConn) SendResetReply(parent_message_id int32, err error) error {
 }
 
 func (c *AgentConn) Reset() {
-
-	c.envState.SetEnvStatus("resetting")
-	c.SendEnvDescribe()
 
 	_, err := env.Reset(c.envState.GetEnvId())
 	if err != nil {

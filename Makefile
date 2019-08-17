@@ -49,7 +49,7 @@ docker:
 	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(CONTROLLER_BINARY_NAME) -v
 	#jiminy zip plugin-go-grpc/
 	jiminy zip plugin-get-dom/
-	docker build . -t sibeshkar/jiminy-env:$(VERSION) --force-rm
+	DOCKER_BUILDKIT=1 docker build . -t sibeshkar/jiminy-env:$(VERSION) --force-rm
 
 docker-d:
 	#env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(PLUGIN_FOLDER_1)/$(PLUGIN_BINARY_NAME_1) -v $(PLUGIN_FOLDER_1)
