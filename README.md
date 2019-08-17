@@ -24,9 +24,17 @@ Compiling:
 2. `make plugin-v1` to plugin-1
 3. `make plugin-v2` to plugin-2
 
-See Makefile for more commands. 
+Recording:
+1. `make docker-record` to enter docker container. Install plugin using `jiminy install <plugin zip file>`
+2. Run `jiminy record <repo/env/task>` for e.g. `jiminy record sibeshkar/wob-v1/ClickButton`
+3. Connect to `0.0.0.0:5901` on your computer with VNCviewer. Password : `boxware`
+4. To use Recordings, copy the recordings from the docker container using the following command:
+`docker cp <container_name>:/root/.jiminy/plugins/sibeshkar/wob-v1/recordings/* .`
+5. Process using `jiminy.demonstration.event_readers.VNCDemontration` object to get iterator.
 
-Update protobuf definition : 
+See Makefile for more commands.
+
+Update protobuf definition :
 
 ```sh
 $ protoc -I proto/ proto/env.proto --go_out=plugins=grpc:proto/

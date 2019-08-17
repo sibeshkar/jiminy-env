@@ -290,15 +290,6 @@ func RunPluginRecord(pluginLink string, record bool) {
 
 	}
 
-	// func() {
-	// 	for {
-	// 		reward, done, err := env.GetReward()
-
-	// 		log.Info(reward, done, err)
-	// 	}
-
-	// }()
-
 	agent_conn.envState.SetEnvStatus("running")
 
 	func() {
