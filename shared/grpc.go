@@ -62,6 +62,17 @@ func (m *GRPCClient) GetReward() (float32, bool, error) {
 	return resp.Reward, resp.Done, nil
 }
 
+func (m *GRPCClient) DoAction(b []byte) (string, error) {
+	resp, err := m.client.DoAction(context.Background(), &proto.Actions{
+		Events: b,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return resp.Status, nil
+}
+
 // func (m *GRPCClient) GetEnvObservation(key string) (string, []byte, error) {
 // 	resp, err := m.client.GetEnvObservation(context.Background(), &proto.Request{
 // 		EnvId: key,
@@ -138,4 +149,11 @@ func (m *GRPCServer) GetEnvObs(
 	req *proto.Request) (*proto.Obs, error) {
 	t, info, err := m.Impl.GetEnvObs(req.EnvId)
 	return &proto.Obs{Type: t, Info: info}, err
+}
+
+func (m *GRPCServer) DoAction(
+	ctx context.Context,
+	req *proto.Actions) (*proto.Response, error) {
+	info, err := m.Impl.DoAction(req.Events)
+	return &proto.Response{Status: info}, err
 }

@@ -32,6 +32,7 @@ type Env interface {
 	GetReward() (float32, bool, error)
 	//GetEnvObservation(key string) (string, []byte, error)
 	GetEnvObs(key string) (string, []byte, error)
+	DoAction(action []byte) (string, error)
 }
 
 // This is the implementation of plugin.GRPCPlugin so we can serve/consume this.

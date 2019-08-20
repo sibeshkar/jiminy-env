@@ -607,8 +607,9 @@ func (c *AgentConn) OnMessage() error {
 			c.InitReset(&m)
 		} else if m.Method == "v0.env.close" {
 			c.Close(&m)
+		} else if m.Method == "v0.agent.action" {
+			env.DoAction(m.Body.Action)
 		}
-
 	}
 
 }

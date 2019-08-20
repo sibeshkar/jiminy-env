@@ -200,26 +200,6 @@ func (Env) GetReward() (float32, bool, error) {
 	return reward, done, err
 }
 
-// func (Env) GetEnvObservation(key string) (string, []byte, error) {
-
-// 	//obs, err := wd.Screenshot()
-// 	// fmt.Println(source)
-// 	// source, err := wd.PageSource()
-
-// 	// //obs, err := base64.StdEncoding.DecodeString(source)
-
-// 	// obs := []byte(source)
-// 	reply, err := safe_execute("return core.getDOMInfo();", nil)
-// 	if err != nil {
-// 		fmt.Println(err)
-// 	}
-
-// 	obs, err := json.Marshal(reply)
-
-// 	return "dom", obs, nil
-
-// }
-
 //Extra observation to get from episode
 func (Env) GetEnvObs(key string) (string, []byte, error) {
 
@@ -239,6 +219,14 @@ func (Env) GetEnvObs(key string) (string, []byte, error) {
 	}
 
 	return "dom", obs, err
+
+}
+
+//Do actions specified in action byte array
+func (Env) DoAction(actions []byte) (string, error) {
+
+	var err error
+	return "", err
 
 }
 
